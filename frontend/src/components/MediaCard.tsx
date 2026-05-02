@@ -1,6 +1,7 @@
 import type { MediaItem, Platform, ContentKind } from '../types';
 import { downloadMedia } from '../lib/download';
 import { proxyUrl } from '../lib/api';
+import { useI18n } from '../lib/i18n';
 
 interface Props {
   item: MediaItem;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function MediaCard({ item, platform, kind }: Props) {
+  const { t } = useI18n();
   const previewSrc = item.thumbnail ?? proxyUrl(item.url);
 
   return (
@@ -31,13 +33,17 @@ export function MediaCard({ item, platform, kind }: Props) {
       </div>
       <div className="p-3 flex items-center justify-between gap-2">
         <span className="text-xs text-slate-400 truncate">
-          {item.width && item.height ? `${item.width}×${item.height}` : item.type === 'video' ? 'Video' : 'Hình ảnh'}
+          {item.width && item.height
+            ? `${item.width}×${item.height}`
+            : item.type === 'video'
+              ? t.media.video
+              : t.media.image}
         </span>
         <button
           onClick={() => downloadMedia(item, platform, kind)}
           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-[0.97] px-3 py-1.5 text-sm font-semibold text-emerald-950 transition"
         >
-          <DownloadIcon className="h-4 w-4" /> Tải xuống
+          <DownloadIcon className="h-4 w-4" /> {t.media.download}
         </button>
       </div>
     </div>

@@ -43,10 +43,3 @@ export function detectKind(rawUrl: string, platform: Platform): ContentKind | nu
   return null;
 }
 
-export function platformLabel(p: Platform): string {
-  return p === 'instagram' ? 'Instagram' : 'Facebook';
-}
-
-export function kindLabel(k: ContentKind): string {
-  return { reel: 'Reel', post: 'Bài viết', video: 'Video', story: 'Story' }[k];
-}

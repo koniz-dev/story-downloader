@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import type { Platform } from '../types';
-import { detectPlatform, detectKind, platformLabel } from '../lib/platform';
+import { detectPlatform, detectKind } from '../lib/platform';
+import { format, useI18n } from '../lib/i18n';
 
 interface Props {
   platform: Platform;
@@ -14,6 +15,7 @@ const PLACEHOLDERS: Record<Platform, string> = {
 };
 
 export function UrlForm({ platform, loading, onSubmit }: Props) {
+  const { t } = useI18n();
   const [url, setUrl] = useState('');
   const [touched, setTouched] = useState(false);
 
@@ -36,7 +38,7 @@ export function UrlForm({ platform, loading, onSubmit }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       <label className="block text-sm font-medium text-slate-300">
-        Dán URL {platformLabel(platform)}
+        {format(t.form.label, { platform: t.platform[platform].name })}
       </label>
       <div className="flex flex-col sm:flex-row gap-2">
         <input
@@ -57,23 +59,24 @@ export function UrlForm({ platform, loading, onSubmit }: Props) {
         >
           {loading ? (
             <span className="flex items-center gap-2">
-              <Spinner /> Đang xử lý…
+              <Spinner /> {t.form.submitting}
             </span>
           ) : (
-            'Tải xuống'
+            t.form.submit
           )}
         </button>
       </div>
       {wrongPlatform && (
         <p className="text-xs text-amber-400">
-          URL này thuộc {platformLabel(detectedPlatform!)}, không phải {platformLabel(platform)}. Đổi tab nền tảng phía trên hoặc dán URL khác.
+          {format(t.form.error.wrongPlatform, {
+            got: t.platform[detectedPlatform!].name,
+            expected: t.platform[platform].name,
+          })}
         </p>
       )}
-      {notUrl && <p className="text-xs text-amber-400">URL không hợp lệ. Hãy copy từ thanh địa chỉ trình duyệt.</p>}
+      {notUrl && <p className="text-xs text-amber-400">{t.form.error.notUrl}</p>}
       {touched && url.length > 0 && detectedPlatform === platform && !validKind && (
-        <p className="text-xs text-amber-400">
-          URL không nhận diện được. Tham khảo "Ví dụ URL hợp lệ" ở phần hướng dẫn phía trên.
-        </p>
+        <p className="text-xs text-amber-400">{t.form.error.unknownKind}</p>
       )}
     </form>
   );

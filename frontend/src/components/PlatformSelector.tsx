@@ -1,4 +1,5 @@
 import type { Platform } from '../types';
+import { useI18n } from '../lib/i18n';
 import { PlatformIcon } from './PlatformIcon';
 
 interface Props {
@@ -6,21 +7,20 @@ interface Props {
   onChange: (platform: Platform) => void;
 }
 
-const OPTIONS: { value: Platform; title: string; subtitle: string }[] = [
-  { value: 'instagram', title: 'Instagram', subtitle: 'Reel, Post, IGTV' },
-  { value: 'facebook', title: 'Facebook', subtitle: 'Post, Video, Reel' },
-];
+const PLATFORMS: Platform[] = ['instagram', 'facebook'];
 
 export function PlatformSelector({ value, onChange }: Props) {
+  const { t } = useI18n();
   return (
     <div className="grid grid-cols-2 gap-3">
-      {OPTIONS.map((opt) => {
-        const selected = value === opt.value;
+      {PLATFORMS.map((p) => {
+        const selected = value === p;
+        const meta = t.platform[p];
         return (
           <button
-            key={opt.value}
+            key={p}
             type="button"
-            onClick={() => onChange(opt.value)}
+            onClick={() => onChange(p)}
             aria-pressed={selected}
             className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition-all ${
               selected
@@ -29,10 +29,10 @@ export function PlatformSelector({ value, onChange }: Props) {
             }`}
           >
             <div className="flex items-center gap-3">
-              <PlatformIcon platform={opt.value} className="h-10 w-10 shrink-0" />
+              <PlatformIcon platform={p} className="h-10 w-10 shrink-0" />
               <div className="min-w-0">
-                <div className="font-semibold text-slate-100">{opt.title}</div>
-                <div className="text-xs text-slate-400">{opt.subtitle}</div>
+                <div className="font-semibold text-slate-100">{meta.name}</div>
+                <div className="text-xs text-slate-400">{meta.kinds}</div>
               </div>
             </div>
             {selected && (
