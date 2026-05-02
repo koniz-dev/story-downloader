@@ -4,6 +4,7 @@ dist/
 .env.local
 .env.*.local
 *.log
+*.tsbuildinfo
 .DS_Store
 .vscode/
 .idea/
@@ -11,4 +12,6 @@ dist/
 # Wrangler
 .wrangler/
 .dev.vars
-worker/.wrangler/
+
+# Claude Code
+.claude/settings.local.json

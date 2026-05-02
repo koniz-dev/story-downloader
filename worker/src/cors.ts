@@ -8,7 +8,8 @@ function originAllowed(origin: string | null, env: Env): string | null {
   for (const pattern of list) {
     if (pattern === origin) return origin;
     if (pattern.includes('*')) {
-      const re = new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+      const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+      const re: RegExp = new RegExp('^' + escaped + '$');
       if (re.test(origin)) return origin;
     }
   }
