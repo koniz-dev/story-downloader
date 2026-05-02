@@ -7,3 +7,10 @@ body,
 #root {
   min-height: 100%;
 }
+
+body {
+  background:
+    radial-gradient(ellipse at top, rgba(99, 102, 241, 0.06), transparent 60%),
+    #020617;
+  font-feature-settings: 'cv11', 'ss01';
+}

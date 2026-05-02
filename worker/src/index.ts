@@ -3,13 +3,14 @@ import { resolveInstagram } from './platforms/instagram';
 import { resolveFacebook } from './platforms/facebook';
 import { proxyMedia } from './proxy';
 import { corsHeaders, handlePreflight } from './cors';
-import { ResolveError, type Env } from './types';
+import { ResolveError, type Env, type Platform } from './types';
 
 const router = Router();
 
 router.get('/api/health', () => json({ ok: true }));
 
 router.post('/api/resolve', async (request: Request) => {
+  const started = Date.now();
   const body = (await request.json().catch(() => null)) as { url?: string } | null;
   if (!body?.url || typeof body.url !== 'string') {
     throw new ResolveError('Body cần có field "url" dạng string', 'MISSING_URL');
@@ -20,8 +21,15 @@ router.post('/api/resolve', async (request: Request) => {
     throw new ResolveError('URL không phải Instagram hoặc Facebook', 'UNSUPPORTED_PLATFORM');
   }
 
-  const result = platform === 'instagram' ? await resolveInstagram(body.url) : await resolveFacebook(body.url);
-  return json(result);
+  try {
+    const result = platform === 'instagram' ? await resolveInstagram(body.url) : await resolveFacebook(body.url);
+    logEvent('resolve.ok', { platform, kind: result.kind, items: result.mediaItems.length, ms: Date.now() - started });
+    return json(result);
+  } catch (e) {
+    const code = e instanceof ResolveError ? e.code : 'INTERNAL';
+    logEvent('resolve.fail', { platform, code, ms: Date.now() - started });
+    throw e;
+  }
 });
 
 router.get('/api/proxy', async (request: Request) => {
@@ -31,12 +39,13 @@ router.get('/api/proxy', async (request: Request) => {
   if (!target) {
     throw new ResolveError('Thiếu query param "url"', 'MISSING_URL');
   }
+  logEvent('proxy', { host: safeHost(target), hasFilename: !!filename });
   return await proxyMedia(target, filename);
 });
 
 router.all('*', () => error(404, 'Not Found'));
 
-function detectPlatform(rawUrl: string): 'instagram' | 'facebook' | null {
+function detectPlatform(rawUrl: string): Platform | null {
   try {
     const u = new URL(rawUrl);
     if (/(?:^|\.)instagram\.com$/i.test(u.hostname)) return 'instagram';
@@ -45,6 +54,18 @@ function detectPlatform(rawUrl: string): 'instagram' | 'facebook' | null {
     return null;
   }
   return null;
+}
+
+function safeHost(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).hostname;
+  } catch {
+    return 'invalid';
+  }
+}
+
+function logEvent(event: string, data: Record<string, unknown>): void {
+  console.log(JSON.stringify({ event, ...data }));
 }
 
 export default {

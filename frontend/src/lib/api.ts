@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function resolveStory(url: string, signal?: AbortSignal): Promise<ResolveResponse> {
+export async function resolveMedia(url: string, signal?: AbortSignal): Promise<ResolveResponse> {
   if (!WORKER_URL) {
     throw new ApiError(
       'VITE_WORKER_URL chưa được cấu hình. Tạo file frontend/.env.local với VITE_WORKER_URL=https://...',

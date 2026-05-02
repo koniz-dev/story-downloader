@@ -1,5 +1,6 @@
 export type Platform = 'instagram' | 'facebook';
 export type MediaType = 'image' | 'video';
+export type ContentKind = 'reel' | 'post' | 'video' | 'story';
 
 export interface MediaItem {
   type: MediaType;
@@ -12,6 +13,7 @@ export interface MediaItem {
 
 export interface ResolveResult {
   platform: Platform;
+  kind: ContentKind;
   mediaItems: MediaItem[];
 }
 
