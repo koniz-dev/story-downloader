@@ -26,7 +26,7 @@ flowchart TD
 
 ### Requirements
 
-- Node.js 20+
+- Node.js 22+ (required by Wrangler 4 and Vite 8)
 - Cloudflare account (for the Worker) — run `wrangler login` once
 
 ### Worker
