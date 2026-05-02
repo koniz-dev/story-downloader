@@ -52,6 +52,7 @@ export interface Translations {
   result: {
     found: string;
     noMedia: string;
+    degraded: string;
   };
   media: {
     video: string;

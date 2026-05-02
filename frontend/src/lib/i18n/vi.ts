@@ -68,6 +68,7 @@ export const vi: Translations = {
   result: {
     found: 'Tìm thấy {n} media',
     noMedia: 'Không tìm thấy media nào trong bài này.',
+    degraded: 'Chỉ lấy được thumbnail — Instagram có thể đang hạn chế truy cập video cho request không đăng nhập.',
   },
   media: {
     video: 'Video',

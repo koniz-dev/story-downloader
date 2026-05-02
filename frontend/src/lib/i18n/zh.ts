@@ -68,6 +68,7 @@ export const zh: Translations = {
   result: {
     found: '找到 {n} 个媒体',
     noMedia: '此帖子未找到媒体。',
+    degraded: '仅获取到缩略图 — Instagram 可能正在限制未登录请求的视频访问。',
   },
   media: {
     video: '视频',

@@ -15,6 +15,7 @@ export interface ResolveResponse {
   platform: Platform;
   kind: ContentKind;
   mediaItems: MediaItem[];
+  degraded?: boolean;
 }
 
 export interface ResolveError {

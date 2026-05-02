@@ -111,6 +111,11 @@ export function App() {
                 {format(t.result.found, { n: result.mediaItems.length })}
               </span>
             </div>
+            {result.degraded && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+                <p className="text-xs text-amber-200/90">⚠ {t.result.degraded}</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {result.mediaItems.map((item, i) => (
                 <MediaCard key={`${item.url}-${i}`} item={item} platform={result.platform} kind={result.kind} />

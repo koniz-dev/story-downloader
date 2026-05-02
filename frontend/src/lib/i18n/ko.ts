@@ -68,6 +68,7 @@ export const ko: Translations = {
   result: {
     found: '{n}개의 미디어를 찾았습니다',
     noMedia: '이 게시물에서 미디어를 찾을 수 없습니다.',
+    degraded: '썸네일만 가져올 수 있었습니다. Instagram이 비로그인 요청의 동영상 접근을 제한할 수 있습니다.',
   },
   media: {
     video: '동영상',

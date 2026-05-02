@@ -68,6 +68,7 @@ export const ja: Translations = {
   result: {
     found: '{n} 件のメディアが見つかりました',
     noMedia: 'この投稿にメディアが見つかりません。',
+    degraded: 'サムネイルのみ取得できました。Instagram が未ログインリクエストの動画アクセスを制限している可能性があります。',
   },
   media: {
     video: '動画',

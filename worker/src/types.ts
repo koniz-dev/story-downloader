@@ -15,6 +15,7 @@ export interface ResolveResult {
   platform: Platform;
   kind: ContentKind;
   mediaItems: MediaItem[];
+  degraded?: boolean;
 }
 
 export interface Env {

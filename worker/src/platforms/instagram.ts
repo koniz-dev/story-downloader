@@ -26,8 +26,19 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
-  const html = await fetchHtml(rawUrl, kind);
-  const items = extractFromHtml(html);
+  let items: MediaItem[] = [];
+
+  if (kind !== 'story') {
+    const shortcode = extractShortcode(url);
+    if (shortcode) {
+      items = await tryEmbed(shortcode, kind);
+    }
+  }
+
+  if (items.length === 0) {
+    const html = await fetchHtml(rawUrl, kind);
+    items = extractFromHtml(html);
+  }
 
   if (items.length === 0) {
     throw new ResolveError(
@@ -39,7 +50,60 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
-  return { platform: 'instagram', kind, mediaItems: items };
+  const expectsVideo = kind === 'reel' || kind === 'video';
+  const degraded = expectsVideo && !items.some((i) => i.type === 'video');
+
+  return {
+    platform: 'instagram',
+    kind,
+    mediaItems: items,
+    ...(degraded ? { degraded: true } : {}),
+  };
+}
+
+function extractShortcode(url: URL): string | null {
+  const m = url.pathname.match(/^\/(?:reels?|p|tv)\/([^/?#]+)/i);
+  return m?.[1] ?? null;
+}
+
+function embedPrefix(kind: ContentKind): string {
+  if (kind === 'reel') return 'reel';
+  if (kind === 'video') return 'tv';
+  return 'p';
+}
+
+async function tryEmbed(shortcode: string, kind: ContentKind): Promise<MediaItem[]> {
+  const url = `https://www.instagram.com/${embedPrefix(kind)}/${shortcode}/embed/captioned/`;
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: HEADERS_BROWSER, redirect: 'follow' });
+  } catch {
+    return [];
+  }
+  if (!res.ok) return [];
+  const html = await res.text();
+  return parseEmbed(html);
+}
+
+function parseEmbed(html: string): MediaItem[] {
+  const items: MediaItem[] = [];
+
+  const videoMatch = html.match(/"video_url":"([^"]+)"/);
+  const displayMatch = html.match(/"display_url":"([^"]+)"/);
+  const thumbMatch = html.match(/"thumbnail_src":"([^"]+)"/);
+  const thumbnail = displayMatch ?? thumbMatch;
+
+  if (videoMatch) {
+    items.push({
+      type: 'video',
+      url: unescapeJson(videoMatch[1]),
+      thumbnail: thumbnail ? unescapeJson(thumbnail[1]) : undefined,
+    });
+  } else if (displayMatch) {
+    items.push({ type: 'image', url: unescapeJson(displayMatch[1]) });
+  }
+
+  return items;
 }
 
 async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
@@ -110,4 +174,12 @@ function decodeHtml(s: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>');
+}
+
+function unescapeJson(s: string): string {
+  return s
+    .replace(/\\u0026/g, '&')
+    .replace(/\\u002F/gi, '/')
+    .replace(/\\\//g, '/')
+    .replace(/\\"/g, '"');
 }

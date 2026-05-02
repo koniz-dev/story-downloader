@@ -68,6 +68,7 @@ export const en: Translations = {
   result: {
     found: 'Found {n} media',
     noMedia: 'No media found in this post.',
+    degraded: 'Only the thumbnail could be retrieved — Instagram may be restricting video access for unauthenticated requests.',
   },
   media: {
     video: 'Video',
