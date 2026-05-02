@@ -9,9 +9,9 @@ const HEADERS_BROWSER: HeadersInit = {
 
 export function detectInstagramKind(url: URL): ContentKind | null {
   const p = url.pathname;
-  if (/^\/reel(?:s)?\/[^/]+/i.test(p)) return 'reel';
-  if (/^\/p\/[^/]+/i.test(p)) return 'post';
-  if (/^\/tv\/[^/]+/i.test(p)) return 'video';
+  if (/^\/(?:[^/]+\/)?reels?\/[^/]+/i.test(p)) return 'reel';
+  if (/^\/(?:[^/]+\/)?p\/[^/]+/i.test(p)) return 'post';
+  if (/^\/(?:[^/]+\/)?tv\/[^/]+/i.test(p)) return 'video';
   if (/^\/stories\/[^/]+\/\d+/i.test(p)) return 'story';
   return null;
 }
@@ -62,7 +62,7 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
 }
 
 function extractShortcode(url: URL): string | null {
-  const m = url.pathname.match(/^\/(?:reels?|p|tv)\/([^/?#]+)/i);
+  const m = url.pathname.match(/^\/(?:[^/]+\/)?(?:reels?|p|tv)\/([^/?#]+)/i);
   return m?.[1] ?? null;
 }
 

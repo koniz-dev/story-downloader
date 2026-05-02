@@ -26,9 +26,9 @@ export function detectKind(rawUrl: string, platform: Platform): ContentKind | nu
 
   const p = url.pathname;
   if (platform === 'instagram') {
-    if (/^\/reel(?:s)?\/[^/]+/i.test(p)) return 'reel';
-    if (/^\/p\/[^/]+/i.test(p)) return 'post';
-    if (/^\/tv\/[^/]+/i.test(p)) return 'video';
+    if (/^\/(?:[^/]+\/)?reels?\/[^/]+/i.test(p)) return 'reel';
+    if (/^\/(?:[^/]+\/)?p\/[^/]+/i.test(p)) return 'post';
+    if (/^\/(?:[^/]+\/)?tv\/[^/]+/i.test(p)) return 'video';
     if (/^\/stories\/[^/]+\/\d+/i.test(p)) return 'story';
     return null;
   }
