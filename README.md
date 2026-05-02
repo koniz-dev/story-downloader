@@ -1,36 +1,33 @@
 # Story Downloader
 
-Website tải story từ Instagram và Facebook qua URL. Frontend chạy trên GitHub Pages,
-backend là một Cloudflare Worker (free tier) đóng vai trò scraper + media proxy.
+Website for downloading stories from Instagram and Facebook via URL. The frontend
+runs on GitHub Pages, the backend is a Cloudflare Worker (free tier) acting as a
+scraper + media proxy.
 
-> **Lưu ý**: Tool dành cho mục đích cá nhân, chỉ hỗ trợ story công khai. Việc tải nội
-> dung có bản quyền hoặc nội dung riêng tư có thể vi phạm ToS của Meta — bạn tự chịu
-> trách nhiệm.
+> **Note**: This tool is intended for personal use and only supports public stories.
+> Downloading copyrighted or private content may violate Meta's ToS — you are solely
+> responsible for how you use it.
 
-## Kiến trúc
+## Architecture
 
-```
-GitHub Pages (Vite + React + Tailwind)
-        │  POST /api/resolve, GET /api/proxy
-        ▼
-Cloudflare Worker (story-dl-worker)
-        │  fetch + parse og: meta tags
-        ▼
-Instagram / Facebook public endpoints
+```mermaid
+flowchart TD
+    A[GitHub Pages<br/>Vite + React + Tailwind] -->|POST /api/resolve<br/>GET /api/proxy| B[Cloudflare Worker<br/>story-dl-worker]
+    B -->|fetch + parse og: meta tags| C[Instagram / Facebook<br/>public endpoints]
 ```
 
-- **`frontend/`** — SPA Vite + React + TypeScript + Tailwind. Deploy lên GitHub Pages
-  qua workflow `.github/workflows/deploy-pages.yml`.
-- **`worker/`** — Cloudflare Worker (TypeScript) với 3 route: `/api/health`,
-  `/api/resolve`, `/api/proxy`. Deploy qua `wrangler deploy` hoặc workflow
-  `.github/workflows/deploy-worker.yml`.
+- **`frontend/`** — Vite + React + TypeScript + Tailwind SPA. Deployed to GitHub
+  Pages via the `.github/workflows/deploy-pages.yml` workflow.
+- **`worker/`** — Cloudflare Worker (TypeScript) with 3 routes: `/api/health`,
+  `/api/resolve`, `/api/proxy`. Deploy with `wrangler deploy` or via the
+  `.github/workflows/deploy-worker.yml` workflow.
 
-## Setup local
+## Local setup
 
-### Yêu cầu
+### Requirements
 
 - Node.js 20+
-- Tài khoản Cloudflare (cho Worker) — `wrangler login` lần đầu
+- Cloudflare account (for the Worker) — run `wrangler login` once
 
 ### Worker
 
@@ -48,34 +45,34 @@ curl http://127.0.0.1:8787/api/health
 cd frontend
 npm install
 cp .env.example .env.local
-# Sửa .env.local: VITE_WORKER_URL=http://127.0.0.1:8787
+# Edit .env.local: VITE_WORKER_URL=http://127.0.0.1:8787
 npm run dev          # http://localhost:5173
 ```
 
 ## Deploy
 
-### 1. Deploy Worker lên Cloudflare
+### 1. Deploy the Worker to Cloudflare
 
 ```bash
 cd worker
 npx wrangler login
 npx wrangler deploy
-# Ghi nhớ URL: https://story-dl-worker.<account>.workers.dev
+# Note the URL: https://story-dl-worker.<account>.workers.dev
 ```
 
-### 2. Tạo repo GitHub và bật Pages
+### 2. Create the GitHub repo and enable Pages
 
 ```bash
-# Từ thư mục gốc
+# From the project root
 git init
 git add .
 git commit -m "Initial commit"
 gh repo create story-downloader --public --source=. --push
 ```
 
-Trong **Settings → Pages**, đặt **Source = GitHub Actions**.
+Under **Settings → Pages**, set **Source = GitHub Actions**.
 
-### 3. Cấu hình Variable cho frontend
+### 3. Configure the frontend variable
 
 **Settings → Secrets and variables → Actions → Variables → New repository variable**:
 
@@ -83,30 +80,31 @@ Trong **Settings → Pages**, đặt **Source = GitHub Actions**.
 | ----------------- | ---------------------------------------------------- |
 | `VITE_WORKER_URL` | `https://story-dl-worker.<account>.workers.dev`      |
 
-> Đây là **Variable** (public), không phải Secret — giá trị sẽ nằm trong JS bundle.
+> This is a **Variable** (public), not a Secret — the value will be embedded in the
+> JS bundle.
 
-### 4. (Tùy chọn) Deploy Worker qua GitHub Actions
+### 4. (Optional) Deploy the Worker via GitHub Actions
 
 **Settings → Secrets and variables → Actions → Secrets**:
 
-| Name                    | Mô tả                                             |
+| Name                    | Description                                       |
 | ----------------------- | ------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Token từ Cloudflare → My Profile → API Tokens     |
+| `CLOUDFLARE_API_TOKEN`  | Token from Cloudflare → My Profile → API Tokens   |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Account ID                 |
 
-### 5. Cấu hình CORS trên Worker
+### 5. Configure CORS on the Worker
 
-Mặc định cho phép `localhost:5173` và mọi `*.github.io`. Nếu dùng custom domain, sửa
-`ALLOWED_ORIGINS` trong `worker/wrangler.toml`:
+By default, `localhost:5173` and any `*.github.io` origin are allowed. If you use a
+custom domain, edit `ALLOWED_ORIGINS` in `worker/wrangler.toml`:
 
 ```toml
 [vars]
 ALLOWED_ORIGINS = "http://localhost:5173,https://your-user.github.io,https://yourdomain.com"
 ```
 
-Rồi `npx wrangler deploy` lại.
+Then run `npx wrangler deploy` again.
 
-## API Worker
+## Worker API
 
 ### `GET /api/health`
 
@@ -134,22 +132,24 @@ Rồi `npx wrangler deploy` lại.
 
 ### `GET /api/proxy?url=<encoded>&filename=<optional>`
 
-Stream media từ CDN của IG/FB về browser kèm `Content-Disposition: attachment` để
-trigger download. Whitelist host: `*.cdninstagram.com`, `*.fbcdn.net`, `*.facebook.com`,
-`*.instagram.com`.
+Streams media from the IG/FB CDN to the browser with
+`Content-Disposition: attachment` to trigger a download. Host whitelist:
+`*.cdninstagram.com`, `*.fbcdn.net`, `*.facebook.com`, `*.instagram.com`.
 
 ## Roadmap
 
-- [ ] Hỗ trợ Instagram Reel / Post media (không chỉ story)
-- [ ] Hỗ trợ TikTok
-- [ ] Tải hàng loạt nhiều URL
-- [ ] PWA + share target từ mobile
+- [ ] Support Instagram Reel / Post media (not just stories)
+- [ ] Support TikTok
+- [ ] Bulk download from multiple URLs
+- [ ] PWA + mobile share target
 - [ ] Dark/light mode toggle
 - [ ] i18n VI/EN
 
-## Giới hạn đã biết
+## Known limitations
 
-- Story **riêng tư** không tải được (cần session cookie của user — chưa support).
-- Một số story hết hạn 24h, IG/FB sẽ trả 404 → nên thử ngay khi story còn hiển thị.
-- IG/FB thay đổi cấu trúc HTML/endpoint thường xuyên — khi parser fail, hãy mở issue
-  hoặc cập nhật `worker/src/platforms/*.ts`.
+- **Private** stories cannot be downloaded (a user session cookie is required —
+  not yet supported).
+- Some stories expire after 24 hours; IG/FB will return 404 — try while the story
+  is still visible.
+- IG/FB change their HTML structure and endpoints frequently — when the parser
+  fails, please open an issue or update `worker/src/platforms/*.ts`.
