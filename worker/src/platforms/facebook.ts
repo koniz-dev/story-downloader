@@ -25,7 +25,7 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   const kind = detectFacebookKind(url);
   if (!kind) {
     throw new ResolveError(
-      'URL Facebook không hợp lệ. Hỗ trợ Post (/<page>/posts/<id>), Video (/<page>/videos/<id> hoặc /watch?v=<id>), Reel (/reel/<id>), fb.watch.',
+      'Invalid Facebook URL. Supported: Post (/<page>/posts/<id>), Video (/<page>/videos/<id> or /watch?v=<id>), Reel (/reel/<id>), fb.watch.',
       'INVALID_FACEBOOK_URL',
     );
   }
@@ -36,8 +36,8 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   if (items.length === 0) {
     throw new ResolveError(
       kind === 'story'
-        ? 'Story Facebook hầu như luôn riêng tư — anonymous request không tải được.'
-        : 'Không trích xuất được media. Bài có thể là riêng tư, chỉ bạn bè, hoặc cấu trúc trang đã thay đổi.',
+        ? 'Facebook stories are almost always private — anonymous requests cannot fetch them.'
+        : 'Could not extract media. The post may be private, friends-only, or the page structure has changed.',
       kind === 'story' ? 'FACEBOOK_STORY_BLOCKED' : 'FACEBOOK_NO_MEDIA',
       404,
     );
@@ -51,19 +51,26 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
   if (!res.ok) {
     if (res.status === 429) {
       throw new ResolveError(
-        'Facebook tạm chặn (rate limit). Đợi 1-2 phút rồi thử lại.',
+        'Facebook is rate-limiting requests. Wait 1-2 minutes and try again.',
         'FACEBOOK_RATE_LIMITED',
         429,
       );
     }
     if (res.status === 404) {
       throw new ResolveError(
-        kind === 'story' ? 'Story không tồn tại hoặc đã hết hạn 24h.' : 'Bài không tồn tại hoặc đã bị xoá.',
-        'FACEBOOK_NOT_FOUND',
+        kind === 'story'
+          ? 'Story does not exist or has expired (24h limit).'
+          : 'Post does not exist or has been deleted.',
+        kind === 'story' ? 'FACEBOOK_STORY_EXPIRED' : 'FACEBOOK_NOT_FOUND',
         404,
       );
     }
-    throw new ResolveError(`Facebook trả về ${res.status}`, 'FACEBOOK_FETCH_FAILED', 502);
+    throw new ResolveError(
+      `Facebook returned ${res.status}`,
+      'FACEBOOK_FETCH_FAILED',
+      502,
+      { status: res.status },
+    );
   }
   return await res.text();
 }

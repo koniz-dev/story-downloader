@@ -21,7 +21,7 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
   const kind = detectInstagramKind(url);
   if (!kind) {
     throw new ResolveError(
-      'URL Instagram không hợp lệ. Hỗ trợ Reel (/reel/<id>), Post (/p/<id>), IGTV (/tv/<id>), Story (/stories/<user>/<id>).',
+      'Invalid Instagram URL. Supported: Reel (/reel/<id>), Post (/p/<id>), IGTV (/tv/<id>), Story (/stories/<user>/<id>).',
       'INVALID_INSTAGRAM_URL',
     );
   }
@@ -32,8 +32,8 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
   if (items.length === 0) {
     throw new ResolveError(
       kind === 'story'
-        ? 'Không trích xuất được media. Story Instagram yêu cầu đăng nhập với hầu hết account — chỉ một số ít story public mới tải được anonymous.'
-        : 'Không trích xuất được media. Bài có thể là riêng tư hoặc cấu trúc trang đã thay đổi.',
+        ? 'Could not extract media. Instagram stories usually require login — only a few public stories work anonymously.'
+        : 'Could not extract media. The post may be private or the page structure has changed.',
       kind === 'story' ? 'INSTAGRAM_STORY_BLOCKED' : 'INSTAGRAM_NO_MEDIA',
       404,
     );
@@ -47,7 +47,7 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
   if (!res.ok) {
     if (res.status === 429) {
       throw new ResolveError(
-        'Instagram tạm chặn (rate limit). Đợi 1-2 phút rồi thử lại, hoặc dùng URL khác.',
+        'Instagram is rate-limiting requests. Wait 1-2 minutes and try again, or use a different URL.',
         'INSTAGRAM_RATE_LIMITED',
         429,
       );
@@ -55,13 +55,18 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
     if (res.status === 404) {
       throw new ResolveError(
         kind === 'story'
-          ? 'Story không tồn tại hoặc đã hết hạn 24h.'
-          : 'Bài không tồn tại hoặc đã bị xoá.',
-        'INSTAGRAM_NOT_FOUND',
+          ? 'Story does not exist or has expired (24h limit).'
+          : 'Post does not exist or has been deleted.',
+        kind === 'story' ? 'INSTAGRAM_STORY_EXPIRED' : 'INSTAGRAM_NOT_FOUND',
         404,
       );
     }
-    throw new ResolveError(`Instagram trả về ${res.status}`, 'INSTAGRAM_FETCH_FAILED', 502);
+    throw new ResolveError(
+      `Instagram returned ${res.status}`,
+      'INSTAGRAM_FETCH_FAILED',
+      502,
+      { status: res.status },
+    );
   }
   return await res.text();
 }

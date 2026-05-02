@@ -49,8 +49,12 @@ export function App() {
         setError({ message: t.result.noMedia, code: 'NO_MEDIA' });
       }
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : e instanceof Error ? e.message : t.form.error.generic;
       const code = e instanceof ApiError ? e.code : undefined;
+      const params = e instanceof ApiError ? e.params : undefined;
+      const template = code && code in t.serverError
+        ? t.serverError[code as keyof typeof t.serverError]
+        : null;
+      const msg = template ? format(template, params ?? {}) : t.form.error.generic;
       setError({ message: msg, code });
       track({ event: 'resolve.fail', platform, code, ms: Date.now() - started });
     } finally {

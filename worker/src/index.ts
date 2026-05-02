@@ -13,12 +13,12 @@ router.post('/api/resolve', async (request: Request) => {
   const started = Date.now();
   const body = (await request.json().catch(() => null)) as { url?: string } | null;
   if (!body?.url || typeof body.url !== 'string') {
-    throw new ResolveError('Body cần có field "url" dạng string', 'MISSING_URL');
+    throw new ResolveError('Body must include "url" string field', 'MISSING_URL');
   }
 
   const platform = detectPlatform(body.url);
   if (!platform) {
-    throw new ResolveError('URL không phải Instagram hoặc Facebook', 'UNSUPPORTED_PLATFORM');
+    throw new ResolveError('URL is not Instagram or Facebook', 'UNSUPPORTED_PLATFORM');
   }
 
   try {
@@ -37,7 +37,7 @@ router.get('/api/proxy', async (request: Request) => {
   const target = url.searchParams.get('url');
   const filename = url.searchParams.get('filename');
   if (!target) {
-    throw new ResolveError('Thiếu query param "url"', 'MISSING_URL');
+    throw new ResolveError('Missing "url" query param', 'MISSING_URL');
   }
   logEvent('proxy', { host: safeHost(target), hasFilename: !!filename });
   return await proxyMedia(target, filename);
@@ -82,10 +82,13 @@ export default {
     } catch (e) {
       const cors = corsHeaders(request, env);
       if (e instanceof ResolveError) {
-        return new Response(JSON.stringify({ error: e.message, code: e.code }), {
-          status: e.status,
-          headers: { 'Content-Type': 'application/json', ...cors },
-        });
+        return new Response(
+          JSON.stringify({ error: e.message, code: e.code, params: e.params }),
+          {
+            status: e.status,
+            headers: { 'Content-Type': 'application/json', ...cors },
+          },
+        );
       }
       const message = e instanceof Error ? e.message : 'Internal error';
       return new Response(JSON.stringify({ error: message, code: 'INTERNAL' }), {

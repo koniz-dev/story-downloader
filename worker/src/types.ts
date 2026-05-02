@@ -22,7 +22,12 @@ export interface Env {
 }
 
 export class ResolveError extends Error {
-  constructor(message: string, public code: string, public status: number = 400) {
+  constructor(
+    message: string,
+    public code: string,
+    public status: number = 400,
+    public params?: Record<string, string | number>,
+  ) {
     super(message);
   }
 }

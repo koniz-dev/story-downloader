@@ -12,18 +12,19 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
   try {
     url = new URL(targetUrl);
   } catch {
-    throw new ResolveError('URL không hợp lệ', 'INVALID_URL');
+    throw new ResolveError('Invalid URL', 'INVALID_URL');
   }
 
   if (url.protocol !== 'https:') {
-    throw new ResolveError('Chỉ chấp nhận https://', 'INVALID_PROTOCOL');
+    throw new ResolveError('Only https:// is accepted', 'INVALID_PROTOCOL');
   }
 
   if (!ALLOWED_HOSTS.some((re) => re.test(url.hostname))) {
     throw new ResolveError(
-      `Domain ${url.hostname} không nằm trong whitelist`,
+      `Domain ${url.hostname} is not in the whitelist`,
       'HOST_NOT_ALLOWED',
       403,
+      { host: url.hostname },
     );
   }
 
@@ -39,7 +40,12 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
   });
 
   if (!upstream.ok || !upstream.body) {
-    throw new ResolveError(`Upstream trả về ${upstream.status}`, 'UPSTREAM_ERROR', 502);
+    throw new ResolveError(
+      `Upstream returned ${upstream.status}`,
+      'UPSTREAM_ERROR',
+      502,
+      { status: upstream.status },
+    );
   }
 
   const headers = new Headers();
