@@ -1,16 +1,39 @@
-# Social Downloader
+# Social Downloader — Free Online Instagram & Facebook Video Downloader
 
-Website for downloading public Reels, Posts, and Videos from Instagram and Facebook
-via URL. The frontend runs on GitHub Pages, the backend is a Cloudflare Worker
-(free tier) acting as a scraper + media proxy.
+> Save public **Reels, Posts, IGTV and Facebook Videos** straight to your
+> device — no signup, no software, no watermark. Paste a link, hit download.
 
-> **Note**: This tool is intended for personal use and only supports public content
-> (`og:` meta tags from anonymous requests). Private content, friends-only posts, and
-> Stories generally cannot be downloaded — Meta restricts these to authenticated
-> sessions. Downloading copyrighted material may violate Meta's ToS — you are solely
-> responsible for how you use it.
+**🌐 Live demo:** [koniz-dev.github.io/story-downloader](https://koniz-dev.github.io/story-downloader/)
+&nbsp;•&nbsp; **🌍 5 languages:** English · Tiếng Việt · 日本語 · 한국어 · 中文
 
-## Architecture
+---
+
+## Why use it
+
+- **🎬 Instagram Reel & Post downloader** — Reels, photo posts, carousels, IGTV.
+- **📘 Facebook video downloader** — public posts, Reels, Watch videos, fb.watch
+  short links.
+- **⚡ One-click downloads** — paste the URL, get a direct save-to-disk button.
+- **🔒 Private by design** — runs entirely in your browser + a stateless
+  serverless Worker. No accounts, no tracking pixels, no history kept.
+- **💸 Free forever** — frontend on GitHub Pages, backend on Cloudflare Workers'
+  free tier. No ads, no paywall.
+- **🌐 Multilingual UI** — auto-detects your browser language; switch any time.
+
+## Supported content
+
+| Platform  | Supported                                       | Notes                                         |
+| --------- | ----------------------------------------------- | --------------------------------------------- |
+| Instagram | Reel, Post (single image + carousel), IGTV      | Account must be **public**                    |
+| Facebook  | Post, Video, Reel, fb.watch                     | Audience must be **Public**                   |
+| Stories   | Best-effort                                     | Most fail — Meta requires login (see below)   |
+
+> ⚠ This tool only works with **public** content (Open Graph meta tags from
+> anonymous requests). It cannot download private accounts, friends-only posts,
+> or content behind a login. Downloading copyrighted material may violate
+> Meta's Terms of Service — you are solely responsible for how you use it.
+
+## How it works
 
 ```mermaid
 flowchart TD
@@ -18,157 +41,66 @@ flowchart TD
     B -->|fetch + parse og: meta tags| C[Instagram / Facebook<br/>public endpoints]
 ```
 
-- **`frontend/`** — Vite + React + TypeScript + Tailwind SPA. Deployed to GitHub
-  Pages via the `.github/workflows/deploy-pages.yml` workflow.
-- **`worker/`** — Cloudflare Worker (TypeScript) with 3 routes: `/api/health`,
-  `/api/resolve`, `/api/proxy`. Deploy with `wrangler deploy` or via the
-  `.github/workflows/deploy-worker.yml` workflow.
+The browser sends a URL to a Cloudflare Worker. The Worker fetches the public
+page anonymously, parses the Open Graph meta tags, and streams the resulting
+media file back to the browser as a download. Read more in
+[`docs/architecture.md`](./docs/architecture.md).
 
-## Local setup
-
-### Requirements
-
-- Node.js 22+ (required by Wrangler 4 and Vite 8)
-- Cloudflare account (for the Worker) — run `wrangler login` once
-
-### Worker
+## Quick start
 
 ```bash
-cd worker
-npm install
-npm run dev          # http://127.0.0.1:8787
-# Test:
-curl http://127.0.0.1:8787/api/health
+# 1. Run the Worker
+cd worker && npm install && npm run dev
+
+# 2. Run the frontend
+cd frontend && npm install
+cp .env.example .env.local   # set VITE_WORKER_URL=http://127.0.0.1:8787
+npm run dev                  # http://localhost:5173
 ```
 
-### Frontend
+Full setup, deployment, and i18n instructions in
+[`docs/development.md`](./docs/development.md).
 
-```bash
-cd frontend
-npm install
-cp .env.example .env.local
-# Edit .env.local: VITE_WORKER_URL=http://127.0.0.1:8787
-npm run dev          # http://localhost:5173
-```
+## Documentation
 
-## Deploy
-
-### 1. Deploy the Worker to Cloudflare
-
-```bash
-cd worker
-npx wrangler login
-npx wrangler deploy
-# Note the URL: https://story-dl-worker.<account>.workers.dev
-```
-
-### 2. Create the GitHub repo and enable Pages
-
-```bash
-# From the project root
-git init
-git add .
-git commit -m "Initial commit"
-gh repo create story-downloader --public --source=. --push
-```
-
-Under **Settings → Pages**, set **Source = GitHub Actions**.
-
-### 3. Configure the frontend variable
-
-**Settings → Secrets and variables → Actions → Variables → New repository variable**:
-
-| Name              | Value                                                |
-| ----------------- | ---------------------------------------------------- |
-| `VITE_WORKER_URL` | `https://story-dl-worker.<account>.workers.dev`      |
-
-> This is a **Variable** (public), not a Secret — the value will be embedded in the
-> JS bundle.
-
-### 4. (Optional) Deploy the Worker via GitHub Actions
-
-**Settings → Secrets and variables → Actions → Secrets**:
-
-| Name                    | Description                                       |
-| ----------------------- | ------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Token from Cloudflare → My Profile → API Tokens   |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Account ID                 |
-
-### 5. Configure CORS on the Worker
-
-By default, `localhost:5173` and any `*.github.io` origin are allowed. If you use a
-custom domain, edit `ALLOWED_ORIGINS` in `worker/wrangler.toml`:
-
-```toml
-[vars]
-ALLOWED_ORIGINS = "http://localhost:5173,https://your-user.github.io,https://yourdomain.com"
-```
-
-Then run `npx wrangler deploy` again.
-
-## Worker API
-
-### `GET /api/health`
-
-```json
-{ "ok": true }
-```
-
-### `POST /api/resolve`
-
-Supported URL shapes:
-
-- Instagram: `/reel/<id>/`, `/p/<id>/`, `/tv/<id>/`, `/stories/<user>/<id>/` (best-effort)
-- Facebook: `/<page>/posts/<id>`, `/<page>/videos/<id>`, `/watch?v=<id>`, `/reel/<id>`, `fb.watch/<id>`, `/stories/<id>` (best-effort)
-
-```json
-// Request
-{ "url": "https://www.instagram.com/reel/<id>/" }
-
-// Response 200
-{
-  "platform": "instagram",
-  "kind": "reel",
-  "mediaItems": [
-    { "type": "video", "url": "https://...mp4", "thumbnail": "https://...jpg" }
-  ]
-}
-
-// Response 4xx/5xx
-{ "error": "...", "code": "INSTAGRAM_NO_MEDIA" }
-```
-
-Error codes: `INVALID_INSTAGRAM_URL`, `INVALID_FACEBOOK_URL`, `UNSUPPORTED_PLATFORM`,
-`INSTAGRAM_NO_MEDIA`, `INSTAGRAM_STORY_BLOCKED`, `INSTAGRAM_RATE_LIMITED`,
-`INSTAGRAM_NOT_FOUND`, `INSTAGRAM_FETCH_FAILED`, `FACEBOOK_NO_MEDIA`,
-`FACEBOOK_STORY_BLOCKED`, `FACEBOOK_RATE_LIMITED`, `FACEBOOK_NOT_FOUND`,
-`FACEBOOK_FETCH_FAILED`, `MISSING_URL`, `HOST_NOT_ALLOWED`, `INTERNAL`.
-
-### `GET /api/proxy?url=<encoded>&filename=<optional>`
-
-Streams media from the IG/FB CDN to the browser with
-`Content-Disposition: attachment` to trigger a download. Host whitelist:
-`*.cdninstagram.com`, `*.fbcdn.net`, `*.facebook.com`, `*.instagram.com`.
+- 📐 [Architecture](./docs/architecture.md) — modules, data flow, why the split.
+- 🛠 [Local development](./docs/development.md) — requirements, dev server,
+  adding a translation.
+- 🚀 [Deployment](./docs/deployment.md) — GitHub Pages + Cloudflare Workers,
+  CORS, custom domain.
+- 🔌 [Worker API reference](./docs/api.md) — endpoints, error codes, host
+  whitelist.
+- ⚠ [Known limitations](./docs/limitations.md) — Stories, rate limits, what
+  *won't* work and why.
 
 ## Roadmap
 
-- [x] Support Instagram Reel / Post / IGTV
-- [x] Support Facebook Post / Video / Reel / fb.watch
+- [x] Instagram Reel / Post / IGTV
+- [x] Facebook Post / Video / Reel / fb.watch
 - [x] Per-platform guide UI with platform selector
-- [ ] Support TikTok
+- [x] i18n: English, Vietnamese, Japanese, Korean, Chinese
+- [ ] TikTok support
 - [ ] Bulk download from multiple URLs
-- [ ] PWA + mobile share target
-- [ ] Dark/light mode toggle
-- [ ] i18n VI/EN
+- [ ] PWA + mobile share-target
+- [ ] Dark / light mode toggle
 
-## Known limitations
+## Tech stack
 
-- **Stories** (Instagram and Facebook) generally require an authenticated session.
-  Anonymous datacenter-IP requests from a Cloudflare Worker hit rate limits or get
-  redirected to login. Stories are kept as best-effort but most will fail.
-- **Private accounts** and friends-only posts cannot be downloaded.
-- Cloudflare Worker IP ranges are heavily flagged by Meta — even public content can
-  be rate-limited. If you hit `*_RATE_LIMITED`, wait 1–2 minutes.
-- Some content expires (Stories: 24h); IG/FB return 404 in that case.
-- IG/FB change their HTML structure and endpoints frequently — when the parser
-  fails, please open an issue or update `worker/src/platforms/*.ts`.
+- **Frontend:** React 18, TypeScript, Vite 8, Tailwind CSS 3
+- **Backend:** Cloudflare Workers (TypeScript, Wrangler 4)
+- **Hosting:** GitHub Pages (frontend) + Cloudflare Workers free tier (backend)
+- **CI:** GitHub Actions (`deploy-pages.yml`, `deploy-worker.yml`)
+
+## Contributing
+
+Issues and PRs are welcome — especially for parser fixes when Instagram or
+Facebook change their HTML. Include the URL that broke and the error code from
+the UI in your bug report. Platform-specific parsers live in
+[`worker/src/platforms/`](./worker/src/platforms).
+
+## Disclaimer
+
+This is a personal project. It is not affiliated with, endorsed by, or
+sponsored by Meta Platforms, Inc., Instagram, or Facebook. All trademarks are
+the property of their respective owners. Use at your own risk and respect the
+copyright of content creators.

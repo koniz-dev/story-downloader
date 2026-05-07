@@ -10,25 +10,25 @@ export { LOCALES } from './types';
 export type { Locale, Translations } from './types';
 
 const DICTS: Record<Locale, Translations> = { en, vi, ja, ko, zh };
-const STORAGE_KEY = 'sd.locale';
 
-function isLocale(v: string | null): v is Locale {
+function isLocale(v: string | null | undefined): v is Locale {
   return v === 'en' || v === 'vi' || v === 'ja' || v === 'ko' || v === 'zh';
 }
 
+function getBase(): string {
+  const raw = (import.meta.env.BASE_URL ?? '/') as string;
+  return raw.replace(/\/+$/, '');
+}
+
+// Each locale ships its own pre-rendered HTML, so the URL path is the source
+// of truth. `/<base>/` → en, `/<base>/<locale>/` → that locale.
 function detectLocale(): Locale {
-  if (typeof localStorage !== 'undefined') {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (isLocale(saved)) return saved;
-  }
-  if (typeof navigator !== 'undefined' && navigator.language) {
-    const tag = navigator.language.toLowerCase();
-    if (tag.startsWith('vi')) return 'vi';
-    if (tag.startsWith('ja')) return 'ja';
-    if (tag.startsWith('ko')) return 'ko';
-    if (tag.startsWith('zh')) return 'zh';
-  }
-  return 'en';
+  if (typeof window === 'undefined') return 'en';
+  const base = getBase();
+  let after = window.location.pathname;
+  if (base && after.startsWith(base)) after = after.slice(base.length);
+  const seg = after.split('/').filter(Boolean)[0];
+  return isLocale(seg) ? seg : 'en';
 }
 
 interface I18nContextValue {
@@ -40,19 +40,25 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(detectLocale);
+  const [locale] = useState<Locale>(detectLocale);
 
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, locale);
-    }
     if (typeof document !== 'undefined') {
       document.documentElement.lang = locale;
     }
   }, [locale]);
 
   const value = useMemo<I18nContextValue>(
-    () => ({ locale, t: DICTS[locale], setLocale }),
+    () => ({
+      locale,
+      t: DICTS[locale],
+      setLocale: (next: Locale) => {
+        if (next === locale || typeof window === 'undefined') return;
+        const base = getBase();
+        const target = next === 'en' ? `${base}/` : `${base}/${next}/`;
+        window.location.assign(target);
+      },
+    }),
     [locale],
   );
 
