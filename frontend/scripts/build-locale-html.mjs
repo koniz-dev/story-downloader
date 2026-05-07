@@ -142,24 +142,26 @@ function buildSitemap() {
   const today = new Date().toISOString().slice(0, 10);
   const entries = LOCALES.map((locale) => {
     const url = urlForLocale(locale);
+    // Per the sitemap XSD, <loc>, <lastmod>, <changefreq>, <priority> must
+    // come in that order, BEFORE any extension elements like <xhtml:link>.
+    // Google's strict parser rejects the file otherwise ("Sitemap could not
+    // be read").
     const alts = LOCALES.map(
       (l) =>
         `    <xhtml:link rel="alternate" hreflang="${l}" href="${escAttr(urlForLocale(l))}" />`,
     ).join('\n');
     return `  <url>
     <loc>${escAttr(url)}</loc>
-${alts}
-    <xhtml:link rel="alternate" hreflang="x-default" href="${escAttr(urlForLocale(DEFAULT_LOCALE))}" />
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>${locale === DEFAULT_LOCALE ? '1.0' : '0.9'}</priority>
+${alts}
+    <xhtml:link rel="alternate" hreflang="x-default" href="${escAttr(urlForLocale(DEFAULT_LOCALE))}" />
   </url>`;
   }).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${entries}
 </urlset>
 `;

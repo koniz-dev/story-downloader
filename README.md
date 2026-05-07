@@ -67,9 +67,12 @@ Full setup, deployment, and i18n instructions in
 - 🛠 [Local development](./docs/development.md) — requirements, dev server,
   adding a translation.
 - 🚀 [Deployment](./docs/deployment.md) — GitHub Pages + Cloudflare Workers,
-  CORS, custom domain.
+  CORS, custom domain, **post-deploy SEO checklist** (GSC, sitemap,
+  social-media cache refresh).
 - 🔌 [Worker API reference](./docs/api.md) — endpoints, error codes, host
   whitelist.
+- ✨ [Feature list](./docs/features.md) — full inventory of what's shipped
+  and what's on the roadmap (more detailed than the marketing roadmap below).
 - ⚠ [Known limitations](./docs/limitations.md) — Stories, rate limits, what
   *won't* work and why.
 

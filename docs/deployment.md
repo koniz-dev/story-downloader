@@ -83,3 +83,66 @@ cd worker && npx wrangler deploy
     SITE_URL: ${{ vars.SITE_URL }}
   ```
   When the variable is unset, the default is `https://koniz-dev.github.io/story-downloader`.
+
+## 7. Post-deploy SEO checklist
+
+Run this **once after the very first deploy** and again any time you ship a
+material change to OG images, titles, descriptions, or the locale set.
+
+### 7.1 Verify ownership in Google Search Console
+
+One-time setup. Skip if already done.
+
+1. Go to https://search.google.com/search-console.
+2. Choose **URL prefix** (not Domain — you don't control DNS for `github.io`).
+3. Enter `https://koniz-dev.github.io/story-downloader/`.
+4. Pick the **HTML file** verification method, download `googleXXXX.html`.
+5. Drop the file into `frontend/public/`. Vite copies `public/` to `dist/` on
+   every build, so it stays live.
+6. Commit + push, wait for the `deploy-pages` workflow to finish.
+7. Open `https://koniz-dev.github.io/story-downloader/googleXXXX.html` in a
+   browser to confirm it loads, then click **Verify** in GSC.
+
+### 7.2 Submit the sitemap
+
+GSC sidebar → **Sitemaps** → enter `sitemap.xml` → **Submit**.
+
+The full URL is `https://koniz-dev.github.io/story-downloader/sitemap.xml`,
+but GSC takes the relative path. Status should flip to **Success** within a
+few minutes after submit.
+
+> **Important**: only submit *after* the deploy that produced the sitemap is
+> live (check the URL in a browser first). Submitting before deploy gives
+> "Couldn't fetch" — fix by removing the entry and re-submitting.
+
+`Discovered pages` count lags by hours/days even when status is Success.
+That's normal; don't keep poking it.
+
+### 7.3 Speed up first-time indexing
+
+GSC top bar → **Inspect any URL** → paste each URL in turn → **Request Indexing**:
+
+- `https://koniz-dev.github.io/story-downloader/`
+- `https://koniz-dev.github.io/story-downloader/vi/`
+- `https://koniz-dev.github.io/story-downloader/ja/`
+- `https://koniz-dev.github.io/story-downloader/ko/`
+- `https://koniz-dev.github.io/story-downloader/zh/`
+
+Quota is ~10 requests/day per property — 5 fits easily. URLs typically appear
+in Google search 2–7 days later. Track via GSC sidebar → **Pages**: each URL
+moves from "Crawled — currently not indexed" → "Indexed".
+
+### 7.4 Refresh social-media OG caches
+
+Facebook caches OG metadata for ~30 days. After the first deploy (and after
+any OG image / title / description change), force re-scrape:
+
+- **Facebook**: https://developers.facebook.com/tools/debug/ — paste each
+  locale URL → click **Scrape Again**. Login required.
+- **LinkedIn**: https://www.linkedin.com/post-inspector/ — paste URL → click
+  **Inspect**. This force-refreshes LinkedIn's cache too.
+- **Twitter/X**: their public Card Validator was deprecated in 2022. Tweet
+  the URL from a draft account to spot-check the preview if you care.
+
+Skip this step on routine code-only deploys — only run it when you've
+changed the meta tags or the OG images.
