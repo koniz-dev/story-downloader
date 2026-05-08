@@ -9,6 +9,12 @@ export const en: Translations = {
   language: {
     label: 'Language',
   },
+  theme: {
+    toggle: 'Toggle theme',
+    system: 'System',
+    light: 'Light',
+    dark: 'Dark',
+  },
   steps: {
     selectPlatform: '1. Choose platform',
     guide: '2. How to get the link',

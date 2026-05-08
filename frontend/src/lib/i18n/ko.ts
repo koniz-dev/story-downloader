@@ -9,6 +9,12 @@ export const ko: Translations = {
   language: {
     label: '언어',
   },
+  theme: {
+    toggle: '테마 전환',
+    system: '시스템',
+    light: '라이트',
+    dark: '다크',
+  },
   steps: {
     selectPlatform: '1. 플랫폼 선택',
     guide: '2. 링크 가져오는 방법',

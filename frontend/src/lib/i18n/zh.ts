@@ -9,6 +9,12 @@ export const zh: Translations = {
   language: {
     label: '语言',
   },
+  theme: {
+    toggle: '切换主题',
+    system: '系统',
+    light: '浅色',
+    dark: '深色',
+  },
   steps: {
     selectPlatform: '1. 选择平台',
     guide: '2. 如何获取链接',

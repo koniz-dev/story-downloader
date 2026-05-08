@@ -9,6 +9,12 @@ export const ja: Translations = {
   language: {
     label: '言語',
   },
+  theme: {
+    toggle: 'テーマを切り替え',
+    system: 'システム',
+    light: 'ライト',
+    dark: 'ダーク',
+  },
   steps: {
     selectPlatform: '1. プラットフォームを選択',
     guide: '2. リンクの取得方法',

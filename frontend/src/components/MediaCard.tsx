@@ -14,8 +14,8 @@ export function MediaCard({ item, platform, kind }: Props) {
   const previewSrc = item.thumbnail ?? proxyUrl(item.url);
 
   return (
-    <div className="group rounded-2xl bg-slate-800/40 border border-slate-700/60 overflow-hidden flex flex-col hover:border-slate-600 transition">
-      <div className="relative aspect-[9/16] bg-slate-900 flex items-center justify-center">
+    <div className="group rounded-2xl bg-bg-raised border border-border-subtle overflow-hidden flex flex-col hover:border-border-strong shadow-card transition-colors motion-reduce:transition-none">
+      <div className="relative aspect-[9/16] max-h-[70vh] bg-bg-sunken flex items-center justify-center">
         {item.type === 'video' ? (
           <video
             src={proxyUrl(item.url)}
@@ -32,7 +32,7 @@ export function MediaCard({ item, platform, kind }: Props) {
         </span>
       </div>
       <div className="p-3 flex items-center justify-between gap-2">
-        <span className="text-xs text-slate-400 truncate">
+        <span className="text-xs text-fg-muted truncate">
           {item.width && item.height
             ? `${item.width}×${item.height}`
             : item.type === 'video'
@@ -41,7 +41,7 @@ export function MediaCard({ item, platform, kind }: Props) {
         </span>
         <button
           onClick={() => downloadMedia(item, platform, kind)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:scale-[0.97] px-3 py-1.5 text-sm font-semibold text-emerald-950 transition"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-success hover:brightness-110 active:scale-[0.97] motion-reduce:active:scale-100 px-4 py-2.5 min-h-[44px] text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success transition-[filter,transform] motion-reduce:transition-none"
         >
           <DownloadIcon className="h-4 w-4" /> {t.media.download}
         </button>

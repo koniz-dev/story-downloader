@@ -9,6 +9,12 @@ export const vi: Translations = {
   language: {
     label: 'Ngôn ngữ',
   },
+  theme: {
+    toggle: 'Đổi giao diện',
+    system: 'Hệ thống',
+    light: 'Sáng',
+    dark: 'Tối',
+  },
   steps: {
     selectPlatform: '1. Chọn nền tảng',
     guide: '2. Hướng dẫn lấy link',

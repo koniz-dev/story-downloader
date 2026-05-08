@@ -38,10 +38,10 @@ export function UrlForm({ platform, loading, onSubmit }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <label className="block text-sm font-medium text-slate-300">
+      <label className="block text-sm font-medium text-fg-secondary">
         {format(t.form.label, { platform: t.platform[platform].name })}
       </label>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col xs:flex-row gap-2">
         <input
           type="url"
           inputMode="url"
@@ -50,16 +50,16 @@ export function UrlForm({ platform, loading, onSubmit }: Props) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onBlur={() => setTouched(true)}
-          className="flex-1 rounded-xl bg-slate-800/80 border border-slate-700 px-4 py-3 text-base placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400/40 transition"
+          className="flex-1 rounded-xl bg-bg-raised border border-border-subtle px-4 py-3 min-h-[48px] text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:border-accent transition-colors motion-reduce:transition-none disabled:opacity-60"
           disabled={loading}
         />
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-500/20 transition active:scale-[0.98]"
+          className="rounded-xl bg-gradient-to-br from-accent to-accent2 hover:brightness-110 disabled:from-bg-sunken disabled:to-bg-sunken disabled:text-fg-muted disabled:cursor-not-allowed disabled:hover:brightness-100 px-6 py-3 min-h-[48px] font-semibold text-white shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-[filter,transform] motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100"
         >
           {loading ? (
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
               <Spinner /> {t.form.submitting}
             </span>
           ) : (
@@ -68,16 +68,16 @@ export function UrlForm({ platform, loading, onSubmit }: Props) {
         </button>
       </div>
       {wrongPlatform && (
-        <p className="text-xs text-amber-400">
+        <p className="text-xs text-warning">
           {format(t.form.error.wrongPlatform, {
             got: t.platform[detectedPlatform!].name,
             expected: t.platform[platform].name,
           })}
         </p>
       )}
-      {notUrl && <p className="text-xs text-amber-400">{t.form.error.notUrl}</p>}
+      {notUrl && <p className="text-xs text-warning">{t.form.error.notUrl}</p>}
       {touched && url.length > 0 && detectedPlatform === platform && !validKind && (
-        <p className="text-xs text-amber-400">{t.form.error.unknownKind}</p>
+        <p className="text-xs text-warning">{t.form.error.unknownKind}</p>
       )}
     </form>
   );

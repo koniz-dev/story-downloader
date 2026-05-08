@@ -9,6 +9,12 @@ export interface Translations {
   language: {
     label: string;
   };
+  theme: {
+    toggle: string;
+    system: string;
+    light: string;
+    dark: string;
+  };
   steps: {
     selectPlatform: string;
     guide: string;

@@ -88,6 +88,10 @@ function buildHead(locale, viteAssets) {
   const copy = SEO[locale];
   const url = urlForLocale(locale);
   const ogImage = `${SITE_URL}/og/${locale}.png`;
+  // Public assets (theme-init.js, favicon.svg) live at dist root. Default
+  // locale's HTML is at dist/index.html so `./` works; other locales are at
+  // dist/<locale>/index.html and need `../`.
+  const rootRel = locale === DEFAULT_LOCALE ? './' : '../';
 
   // Defence-in-depth CSP. The worker URL is locked to a fixed origin; OG
   // images / favicons are same-origin. Tailwind requires 'unsafe-inline' for
@@ -109,10 +113,12 @@ function buildHead(locale, viteAssets) {
 
   return `<head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="Content-Security-Policy" content="${escAttr(csp)}" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="theme-color" content="#020617" />
+    <link rel="icon" type="image/svg+xml" href="${rootRel}favicon.svg" />
+    <meta name="theme-color" content="#fafafc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+    <script src="${rootRel}theme-init.js"></script>
 
     <title>${escHtml(copy.title)}</title>
     <meta name="description" content="${escAttr(copy.description)}" />
