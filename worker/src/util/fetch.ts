@@ -79,33 +79,22 @@ export function boundedStream(
   const reader = body.getReader();
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
-      try {
-        const { value, done } = await reader.read();
-        if (done) {
-          controller.close();
-          return;
-        }
-        total += value.byteLength;
-        if (total > max) {
-          controller.error(new Error(`Stream exceeded ${max} bytes`));
-          try {
-            await reader.cancel();
-          } catch {
-            // ignore
-          }
-          return;
-        }
-        controller.enqueue(value);
-      } catch (e) {
-        controller.error(e);
+      const { value, done } = await reader.read();
+      if (done) {
+        controller.close();
+        return;
       }
+      total += value.byteLength;
+      if (total > max) {
+        // Throwing from pull errors the stream and releases the reader.
+        // Cleaner than controller.error + manual cancel which can leak
+        // unhandled rejections under some runtimes.
+        throw new Error(`Stream exceeded ${max} bytes`);
+      }
+      controller.enqueue(value);
     },
     cancel(reason) {
-      try {
-        reader.cancel(reason);
-      } catch {
-        // ignore
-      }
+      reader.cancel(reason).catch(() => {});
     },
   });
 }

@@ -185,7 +185,7 @@ function upstreamFetchError(e: unknown, code: string = 'UPSTREAM_ERROR'): Resolv
   );
 }
 
-function sanitizeFilename(name: string | null): string | null {
+export function sanitizeFilename(name: string | null): string | null {
   if (!name) return null;
   // Strip CR/LF (header injection), quote/backslash (breaks the surrounding
   // quoted-string), and `;` (Content-Disposition parameter injection).
