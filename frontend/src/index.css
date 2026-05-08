@@ -32,6 +32,21 @@
 
     --shadow-color: 15 23 42;
 
+    /* Glass surface */
+    --glass-bg: 255 255 255;
+    --glass-border: 15 23 42;
+    --glass-bg-alpha: 0.7;
+    --glass-border-alpha: 0.12;
+
+    /* Neon accents (rich gradient stops) */
+    --neon-1: 99 102 241;
+    --neon-2: 168 85 247;
+    --neon-3: 236 72 153;
+    --neon-4: 56 189 248;
+
+    /* Glow */
+    --glow: 99 102 241;
+
     color-scheme: light;
   }
 
@@ -64,6 +79,18 @@
 
     --shadow-color: 0 0 0;
 
+    --glass-bg: 15 23 42;
+    --glass-border: 148 163 184;
+    --glass-bg-alpha: 0.45;
+    --glass-border-alpha: 0.18;
+
+    --neon-1: 129 140 248;
+    --neon-2: 192 132 252;
+    --neon-3: 244 114 182;
+    --neon-4: 103 232 249;
+
+    --glow: 129 140 248;
+
     color-scheme: dark;
   }
 
@@ -74,12 +101,105 @@
   }
 
   body {
-    background:
-      radial-gradient(ellipse 60vw 40vh at 50% -10%, rgb(var(--accent) / 0.10), transparent 60%),
-      radial-gradient(ellipse 50vw 35vh at 100% 110%, rgb(var(--accent-2) / 0.08), transparent 60%),
-      rgb(var(--bg-base));
+    background: rgb(var(--bg-base));
     color: rgb(var(--text-primary));
     font-feature-settings: 'cv11', 'ss01';
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .bg-mesh {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 50vw 35vh at 20% 10%, rgb(var(--neon-1) / 0.18), transparent 60%),
+      radial-gradient(ellipse 45vw 30vh at 80% 20%, rgb(var(--neon-2) / 0.16), transparent 60%),
+      radial-gradient(ellipse 55vw 40vh at 70% 90%, rgb(var(--neon-3) / 0.14), transparent 60%),
+      radial-gradient(ellipse 40vw 30vh at 10% 80%, rgb(var(--neon-4) / 0.10), transparent 60%);
+    animation: meshDrift 60s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  @keyframes meshDrift {
+    0%   { transform: translate3d(-2%, -1%, 0) scale(1); }
+    50%  { transform: translate3d(2%, 1%, 0) scale(1.05); }
+    100% { transform: translate3d(-1%, 2%, 0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-mesh { animation: none; }
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+  }
+
+  .glass-strong {
+    background: rgb(var(--glass-bg) / 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgb(var(--glass-border) / 0.18);
+  }
+
+  .glow-accent {
+    box-shadow:
+      0 0 0 1px rgb(var(--glow) / 0.25),
+      0 8px 32px rgb(var(--glow) / 0.35);
+  }
+
+  .btn-shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .btn-shimmer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgb(255 255 255 / 0.22) 50%,
+      transparent 70%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 2.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .btn-shimmer:disabled::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    60%  { transform: translateX(100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-shimmer::before { animation: none; opacity: 0; }
+  }
+
+  .animate-fadeUp {
+    animation: fadeUp 0.5s ease-out backwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fadeUp { animation: none; }
   }
 }

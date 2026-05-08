@@ -11,7 +11,7 @@ export function LanguageSelector() {
         value={locale}
         onChange={(e) => setLocale(e.target.value as Locale)}
         aria-label={t.language.label}
-        className="rounded-lg border border-border-subtle bg-bg-raised px-2 py-2 min-h-[40px] text-sm text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
+        className="glass rounded-lg px-2 py-2 min-h-[40px] text-sm text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring"
       >
         {LOCALES.map((l) => (
           <option key={l.code} value={l.code} className="bg-bg-overlay text-fg">

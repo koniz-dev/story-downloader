@@ -21,7 +21,7 @@ export function ThemeToggle() {
       onClick={cycle}
       aria-label={`${t.theme.toggle} (${stateLabel})`}
       title={`${t.theme.toggle}: ${stateLabel}`}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border-subtle bg-bg-raised text-fg-secondary hover:bg-bg-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none"
+      className="glass inline-flex h-10 w-10 items-center justify-center rounded-xl text-fg-secondary hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none"
     >
       {theme === 'system' && <MonitorIcon className="h-5 w-5" />}
       {theme === 'light' && <SunIcon className="h-5 w-5" />}

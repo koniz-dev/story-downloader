@@ -17,8 +17,8 @@ export const ja: Translations = {
   },
   steps: {
     selectPlatform: '1. プラットフォームを選択',
-    guide: '2. リンクの取得方法',
-    pasteAndDownload: '3. リンクを貼ってダウンロード',
+    guide: '3. リンクの取得方法',
+    pasteAndDownload: '2. リンクを貼ってダウンロード',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'リール / 投稿 / IGTV' },
@@ -34,6 +34,8 @@ export const ja: Translations = {
   guide: {
     title: 'リンクの取得方法',
     examplesTitle: '有効な URL の例',
+    show: '取得方法を表示',
+    hide: '取得方法を隠す',
     instagram: {
       intro: '公開アカウントの Instagram コンテンツに対応します。アカウントは「公開」設定が必要です。',
       steps: [

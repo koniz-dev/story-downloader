@@ -22,10 +22,8 @@ export function PlatformSelector({ value, onChange }: Props) {
             type="button"
             onClick={() => onChange(p)}
             aria-pressed={selected}
-            className={`group relative overflow-hidden rounded-2xl border p-4 min-h-[72px] text-left transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring ${
-              selected
-                ? 'border-accent/60 bg-accent/10 ring-2 ring-accent-ring/40'
-                : 'border-border-subtle bg-bg-raised hover:border-border-strong hover:bg-bg-sunken'
+            className={`glass group relative overflow-hidden rounded-2xl p-4 sm:p-5 min-h-[76px] text-left transition-all duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 ${
+              selected ? 'glow-accent ring-2 ring-accent-ring/50' : 'hover:shadow-card'
             }`}
           >
             <div className="flex items-center gap-3">

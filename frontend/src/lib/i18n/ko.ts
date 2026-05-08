@@ -17,8 +17,8 @@ export const ko: Translations = {
   },
   steps: {
     selectPlatform: '1. 플랫폼 선택',
-    guide: '2. 링크 가져오는 방법',
-    pasteAndDownload: '3. 링크 붙여넣고 다운로드',
+    guide: '3. 링크 가져오는 방법',
+    pasteAndDownload: '2. 링크 붙여넣고 다운로드',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: '릴스 / 게시물 / IGTV' },
@@ -34,6 +34,8 @@ export const ko: Translations = {
   guide: {
     title: '링크 가져오는 방법',
     examplesTitle: '유효한 URL 예시',
+    show: '가이드 보기',
+    hide: '가이드 숨기기',
     instagram: {
       intro: '공개 계정의 Instagram 콘텐츠를 지원합니다. 계정이 공개 상태여야 합니다.',
       steps: [

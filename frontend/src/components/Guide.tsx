@@ -26,7 +26,7 @@ export function Guide({ platform }: { platform: Platform }) {
   const examples = EXAMPLES[platform];
 
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-raised p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-card">
+    <div className="glass rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-card">
       <div>
         <h3 className="text-sm font-semibold text-fg mb-1">{t.guide.title}</h3>
         <p className="text-sm text-fg-muted">{c.intro}</p>

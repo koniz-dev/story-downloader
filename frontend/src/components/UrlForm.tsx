@@ -50,21 +50,23 @@ export function UrlForm({ platform, loading, onSubmit }: Props) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onBlur={() => setTouched(true)}
-          className="flex-1 rounded-xl bg-bg-raised border border-border-subtle px-4 py-3 min-h-[48px] text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:border-accent transition-colors motion-reduce:transition-none disabled:opacity-60"
+          className="glass flex-1 rounded-xl px-4 py-3 min-h-[52px] text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-all motion-reduce:transition-none disabled:opacity-60"
           disabled={loading}
         />
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-xl bg-gradient-to-br from-accent to-accent2 hover:brightness-110 disabled:from-bg-sunken disabled:to-bg-sunken disabled:text-fg-muted disabled:cursor-not-allowed disabled:hover:brightness-100 px-6 py-3 min-h-[48px] font-semibold text-white shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-[filter,transform] motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100"
+          className="btn-shimmer rounded-xl bg-gradient-to-br from-[rgb(var(--neon-1))] via-[rgb(var(--neon-2))] to-[rgb(var(--neon-3))] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 px-6 py-3 min-h-[52px] font-semibold text-white shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-[filter,transform] motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100"
         >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <Spinner /> {t.form.submitting}
-            </span>
-          ) : (
-            t.form.submit
-          )}
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <Spinner /> {t.form.submitting}
+              </>
+            ) : (
+              t.form.submit
+            )}
+          </span>
         </button>
       </div>
       {wrongPlatform && (

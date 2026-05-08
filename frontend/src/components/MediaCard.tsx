@@ -7,14 +7,18 @@ interface Props {
   item: MediaItem;
   platform: Platform;
   kind: ContentKind;
+  index?: number;
 }
 
-export function MediaCard({ item, platform, kind }: Props) {
+export function MediaCard({ item, platform, kind, index = 0 }: Props) {
   const { t } = useI18n();
   const previewSrc = item.thumbnail ?? proxyUrl(item.url);
 
   return (
-    <div className="group rounded-2xl bg-bg-raised border border-border-subtle overflow-hidden flex flex-col hover:border-border-strong shadow-card transition-colors motion-reduce:transition-none">
+    <div
+      className="glass animate-fadeUp group rounded-2xl overflow-hidden flex flex-col shadow-card hover:shadow-pop hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
       <div className="relative aspect-[9/16] max-h-[70vh] bg-bg-sunken flex items-center justify-center">
         {item.type === 'video' ? (
           <video

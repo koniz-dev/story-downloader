@@ -9,7 +9,7 @@ interface Props {
 export function ErrorAlert({ message, code, onDismiss }: Props) {
   const { t } = useI18n();
   return (
-    <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 flex items-start justify-between gap-3">
+    <div className="rounded-xl border border-danger/30 bg-danger/10 backdrop-blur-md px-4 py-3 flex items-start justify-between gap-3 shadow-card">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-danger">{message}</p>
         {code && <p className="mt-1 text-[11px] font-mono text-danger/70">{t.alert.code}: {code}</p>}

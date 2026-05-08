@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PlatformSelector } from './components/PlatformSelector';
-import { Guide } from './components/Guide';
+import { CollapsibleGuide } from './components/CollapsibleGuide';
 import { UrlForm } from './components/UrlForm';
 import { MediaCard } from './components/MediaCard';
 import { ErrorAlert } from './components/ErrorAlert';
@@ -65,10 +65,18 @@ export function App() {
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col">
-      <header className="border-b border-border-subtle bg-bg-base/70 backdrop-blur-sm pt-safe-t pl-safe-l pr-safe-r">
+      <div className="bg-mesh" aria-hidden="true" />
+
+      <header className="glass-strong sticky top-0 z-20 pt-safe-t pl-safe-l pr-safe-r">
         <div className="max-w-3xl mx-auto px-4 py-4 sm:py-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold bg-gradient-to-r from-accent via-accent2 to-amber-500 dark:to-amber-200 bg-clip-text text-transparent">
+            <h1
+              className="text-xl xs:text-2xl sm:text-3xl font-bold bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  'linear-gradient(90deg, rgb(var(--neon-1)), rgb(var(--neon-2)), rgb(var(--neon-3)), rgb(var(--neon-4)))',
+              }}
+            >
               {t.app.title}
             </h1>
             <p className="text-xs sm:text-sm text-fg-muted mt-1">{t.app.subtitle}</p>
@@ -89,13 +97,13 @@ export function App() {
         {platform && (
           <>
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.guide}</h2>
-              <Guide platform={platform} />
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.pasteAndDownload}</h2>
+              <UrlForm platform={platform} loading={loading} onSubmit={handleSubmit} />
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.pasteAndDownload}</h2>
-              <UrlForm platform={platform} loading={loading} onSubmit={handleSubmit} />
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.guide}</h2>
+              <CollapsibleGuide platform={platform} />
             </section>
           </>
         )}
@@ -117,14 +125,20 @@ export function App() {
             )}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
               {result.mediaItems.map((item, i) => (
-                <MediaCard key={`${item.url}-${i}`} item={item} platform={result.platform} kind={result.kind} />
+                <MediaCard
+                  key={`${item.url}-${i}`}
+                  item={item}
+                  platform={result.platform}
+                  kind={result.kind}
+                  index={i}
+                />
               ))}
             </div>
           </section>
         )}
       </main>
 
-      <footer className="border-t border-border-subtle pl-safe-l pr-safe-r pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <footer className="glass pl-safe-l pr-safe-r pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto px-4 text-xs text-fg-muted text-center">
           {t.app.footer}
         </div>

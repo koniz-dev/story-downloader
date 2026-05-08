@@ -17,8 +17,8 @@ export const vi: Translations = {
   },
   steps: {
     selectPlatform: '1. Chọn nền tảng',
-    guide: '2. Hướng dẫn lấy link',
-    pasteAndDownload: '3. Dán link & tải',
+    guide: '3. Hướng dẫn lấy link',
+    pasteAndDownload: '2. Dán link & tải',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel, Post, IGTV' },
@@ -34,6 +34,8 @@ export const vi: Translations = {
   guide: {
     title: 'Cách lấy link',
     examplesTitle: 'Ví dụ URL hợp lệ',
+    show: 'Xem hướng dẫn',
+    hide: 'Ẩn hướng dẫn',
     instagram: {
       intro: 'Hỗ trợ bài đăng công khai trên Instagram. Tài khoản phải để chế độ Public.',
       steps: [

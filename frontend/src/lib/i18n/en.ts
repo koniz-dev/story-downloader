@@ -17,8 +17,8 @@ export const en: Translations = {
   },
   steps: {
     selectPlatform: '1. Choose platform',
-    guide: '2. How to get the link',
-    pasteAndDownload: '3. Paste link & download',
+    guide: '3. How to get the link',
+    pasteAndDownload: '2. Paste link & download',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel, Post, IGTV' },
@@ -34,6 +34,8 @@ export const en: Translations = {
   guide: {
     title: 'How to get the link',
     examplesTitle: 'Example valid URLs',
+    show: 'Show how-to',
+    hide: 'Hide how-to',
     instagram: {
       intro: 'Supports public Instagram content. The account must be set to Public.',
       steps: [

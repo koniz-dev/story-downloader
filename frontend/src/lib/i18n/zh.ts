@@ -17,8 +17,8 @@ export const zh: Translations = {
   },
   steps: {
     selectPlatform: '1. 选择平台',
-    guide: '2. 如何获取链接',
-    pasteAndDownload: '3. 粘贴链接并下载',
+    guide: '3. 如何获取链接',
+    pasteAndDownload: '2. 粘贴链接并下载',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel / 帖子 / IGTV' },
@@ -34,6 +34,8 @@ export const zh: Translations = {
   guide: {
     title: '如何获取链接',
     examplesTitle: '有效 URL 示例',
+    show: '查看指南',
+    hide: '隐藏指南',
     instagram: {
       intro: '支持公开账号的 Instagram 内容。账号必须设为公开。',
       steps: [

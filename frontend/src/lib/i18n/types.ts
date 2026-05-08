@@ -34,6 +34,8 @@ export interface Translations {
   guide: {
     title: string;
     examplesTitle: string;
+    show: string;
+    hide: string;
     instagram: {
       intro: string;
       steps: [string, string, string, string];
