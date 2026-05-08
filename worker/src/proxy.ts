@@ -6,6 +6,13 @@ import {
   isTikTokPageUrl,
   parseTikTokItemStruct,
 } from './platforms/tiktok';
+import {
+  FETCH_TIMEOUT_MS,
+  MAX_PROXY_BYTES,
+  assertFinalHostAllowed,
+  boundedStream,
+  isHostAllowed,
+} from './util/fetch';
 
 const ALLOWED_HOSTS = [
   /\.cdninstagram\.com$/i,
@@ -16,7 +23,7 @@ const ALLOWED_HOSTS = [
   /\.tiktokcdn-us\.com$/i,
   /\.tiktokcdn-eu\.com$/i,
   /\.tiktok\.com$/i,
-];
+] as const;
 
 export async function proxyMedia(targetUrl: string, filename: string | null): Promise<Response> {
   let url: URL;
@@ -30,7 +37,7 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
     throw new ResolveError('Only https:// is accepted', 'INVALID_PROTOCOL');
   }
 
-  if (!ALLOWED_HOSTS.some((re) => re.test(url.hostname))) {
+  if (!isHostAllowed(url.hostname, ALLOWED_HOSTS)) {
     throw new ResolveError(
       `Domain ${url.hostname} is not in the whitelist`,
       'HOST_NOT_ALLOWED',
@@ -49,14 +56,25 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
       ? 'https://www.tiktok.com/'
       : 'https://www.facebook.com/';
 
-  const upstream = await fetch(targetUrl, {
-    headers: {
-      Referer: referer,
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    },
-    redirect: 'follow',
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(targetUrl, {
+      headers: {
+        Referer: referer,
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw upstreamFetchError(e);
+  }
+
+  // Re-validate the FINAL host after redirect — initial host check is not
+  // sufficient because a 30x can land us on an unrelated origin and we'd
+  // happily proxy that as if it were CDN content.
+  assertFinalHostAllowed(upstream, ALLOWED_HOSTS);
 
   if (!upstream.ok || !upstream.body) {
     throw new ResolveError(
@@ -67,6 +85,7 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
     );
   }
 
+  rejectIfTooLarge(upstream);
   return streamingResponse(upstream, filename);
 }
 
@@ -85,14 +104,23 @@ async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promi
     );
   }
 
-  const upstream = await fetch(playAddr, {
-    headers: {
-      'User-Agent': TIKTOK_BROWSER_UA,
-      Referer: 'https://www.tiktok.com/',
-      ...(cookies ? { Cookie: cookies } : {}),
-    },
-    redirect: 'follow',
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(playAddr, {
+      headers: {
+        'User-Agent': TIKTOK_BROWSER_UA,
+        Referer: 'https://www.tiktok.com/',
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw upstreamFetchError(e, 'TIKTOK_FETCH_FAILED');
+  }
+
+  // Defence-in-depth: if TikTok ever 30x'd us off-CDN, refuse to proxy.
+  assertFinalHostAllowed(upstream, ALLOWED_HOSTS);
 
   if (!upstream.ok || !upstream.body) {
     throw new ResolveError(
@@ -103,9 +131,9 @@ async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promi
     );
   }
 
-  // If TikTok served a captcha / interstitial instead of the real video,
-  // upstream's content-type will be text/html. Catch that explicitly so we
-  // don't stream HTML to the user as a fake .mp4.
+  // Catches TikTok captcha/interstitial pages that come back with text/html
+  // when we expected an mp4. Without this we'd happily stream HTML as a fake
+  // video file.
   const ct = upstream.headers.get('Content-Type') ?? '';
   if (!ct.startsWith('video/') && !ct.startsWith('image/')) {
     throw new ResolveError(
@@ -115,7 +143,20 @@ async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promi
     );
   }
 
+  rejectIfTooLarge(upstream);
   return streamingResponse(upstream, filename);
+}
+
+function rejectIfTooLarge(upstream: Response): void {
+  const lenHeader = upstream.headers.get('Content-Length');
+  if (lenHeader && Number(lenHeader) > MAX_PROXY_BYTES) {
+    throw new ResolveError(
+      `Upstream body exceeds ${MAX_PROXY_BYTES} bytes`,
+      'UPSTREAM_TOO_LARGE',
+      502,
+      { limit: MAX_PROXY_BYTES, length: Number(lenHeader) },
+    );
+  }
 }
 
 function streamingResponse(upstream: Response, filename: string | null): Response {
@@ -129,12 +170,26 @@ function streamingResponse(upstream: Response, filename: string | null): Respons
   const safeName = sanitizeFilename(filename) ?? defaultFilename(contentType);
   headers.set('Content-Disposition', `attachment; filename="${safeName}"`);
 
-  return new Response(upstream.body, { status: 200, headers });
+  // upstream.body is non-null here — checked by callers.
+  const body = boundedStream(upstream.body!, MAX_PROXY_BYTES);
+  return new Response(body, { status: 200, headers });
+}
+
+function upstreamFetchError(e: unknown, code: string = 'UPSTREAM_ERROR'): ResolveError {
+  if (e instanceof ResolveError) return e;
+  const isAbort = e instanceof DOMException && e.name === 'TimeoutError';
+  return new ResolveError(
+    isAbort ? 'Upstream timed out' : 'Upstream fetch failed',
+    isAbort ? 'UPSTREAM_TIMEOUT' : code,
+    504,
+  );
 }
 
 function sanitizeFilename(name: string | null): string | null {
   if (!name) return null;
-  const cleaned = name.replace(/[\r\n"\\]/g, '').slice(0, 120);
+  // Strip CR/LF (header injection), quote/backslash (breaks the surrounding
+  // quoted-string), and `;` (Content-Disposition parameter injection).
+  const cleaned = name.replace(/[\r\n"\\;]/g, '').slice(0, 120);
   return cleaned.length > 0 ? cleaned : null;
 }
 

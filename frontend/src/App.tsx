@@ -17,7 +17,7 @@ export function App() {
   const { t } = useI18n();
   const [platform, setPlatform] = useState<Platform | null>(() => {
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-    return saved === 'instagram' || saved === 'facebook' ? saved : null;
+    return saved === 'instagram' || saved === 'facebook' || saved === 'tiktok' ? saved : null;
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResolveResponse | null>(null);
@@ -51,7 +51,7 @@ export function App() {
     } catch (e) {
       const code = e instanceof ApiError ? e.code : undefined;
       const params = e instanceof ApiError ? e.params : undefined;
-      const template = code && code in t.serverError
+      const template = code && Object.prototype.hasOwnProperty.call(t.serverError, code)
         ? t.serverError[code as keyof typeof t.serverError]
         : null;
       const msg = template ? format(template, params ?? {}) : t.form.error.generic;

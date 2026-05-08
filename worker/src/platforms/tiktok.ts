@@ -1,4 +1,5 @@
 import { ResolveError, type ResolveResult, type MediaItem, type ContentKind } from '../types';
+import { FETCH_TIMEOUT_MS, MAX_HTML_BYTES, readBoundedText } from '../util/fetch';
 
 const HEADERS_BROWSER: HeadersInit = {
   'User-Agent':
@@ -34,8 +35,15 @@ export interface TikTokFetchResult {
 export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult> {
   let res: Response;
   try {
-    res = await fetch(rawUrl, { headers: HEADERS_BROWSER, redirect: 'follow' });
-  } catch {
+    res = await fetch(rawUrl, {
+      headers: HEADERS_BROWSER,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      throw new ResolveError('TikTok timed out', 'TIKTOK_FETCH_FAILED', 504);
+    }
     throw new ResolveError('Could not connect to TikTok.', 'TIKTOK_FETCH_FAILED', 502);
   }
   if (!res.ok) {
@@ -72,7 +80,7 @@ export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult
       429,
     );
   }
-  return { html: await res.text(), finalUrl: res.url, cookies };
+  return { html: await readBoundedText(res, MAX_HTML_BYTES), finalUrl: res.url, cookies };
 }
 
 function collectCookies(headers: Headers): string {

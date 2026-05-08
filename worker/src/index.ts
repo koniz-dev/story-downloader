@@ -4,6 +4,7 @@ import { resolveFacebook } from './platforms/facebook';
 import { resolveTikTok } from './platforms/tiktok';
 import { proxyMedia } from './proxy';
 import { corsHeaders, handlePreflight } from './cors';
+import { checkRateLimit } from './rate-limit';
 import { ResolveError, type Env, type Platform } from './types';
 
 const router = Router();
@@ -11,6 +12,7 @@ const router = Router();
 router.get('/api/health', () => json({ ok: true }));
 
 router.post('/api/resolve', async (request: Request) => {
+  await checkRateLimit(request, '/api/resolve');
   const started = Date.now();
   const body = (await request.json().catch(() => null)) as { url?: string } | null;
   if (!body?.url || typeof body.url !== 'string') {
@@ -39,6 +41,7 @@ router.post('/api/resolve', async (request: Request) => {
 });
 
 router.get('/api/proxy', async (request: Request) => {
+  await checkRateLimit(request, '/api/proxy');
   const url = new URL(request.url);
   const target = url.searchParams.get('url');
   const filename = url.searchParams.get('filename');

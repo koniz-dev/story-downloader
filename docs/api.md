@@ -101,6 +101,9 @@ restricting video access for the anonymous request).
 | `TIKTOK_NOT_FOUND`         | Video does not exist or has been deleted.                            |
 | `TIKTOK_FETCH_FAILED`      | Upstream returned an unexpected status.                              |
 | `TIKTOK_GEO_BLOCKED`       | TikTok refused the request — geo-restricted or login required.       |
+| `RATE_LIMITED`             | Per-IP rate limit hit (30/min on `/api/resolve`, 60/min on `/api/proxy`). HTTP 429. |
+| `UPSTREAM_TIMEOUT`          | Upstream did not respond within 8 s. HTTP 504.                       |
+| `UPSTREAM_TOO_LARGE`        | Upstream body exceeds the cap (5 MB HTML / 200 MB media). HTTP 502.  |
 | `INTERNAL`                 | Unhandled exception — check Worker logs.                             |
 
 ## `GET /api/proxy?url=<encoded>&filename=<optional>`
@@ -121,6 +124,20 @@ Only these hosts are accepted:
 
 Any other host returns `400 HOST_NOT_ALLOWED`. This prevents the Worker from
 being abused as an open proxy.
+
+The whitelist is checked **twice** per proxy request: once on the URL the
+client supplied, and once on the FINAL URL after `redirect: 'follow'`. Without
+the second check, a 30x from a whitelisted host could land us on an arbitrary
+origin.
+
+### Limits
+
+- **Body size cap.** `/api/proxy` aborts mid-stream past 200 MB. `/api/resolve`
+  refuses HTML bodies past 5 MB.
+- **Fetch timeout.** All upstream fetches abort after 8 s
+  (`UPSTREAM_TIMEOUT`).
+- **Rate limit.** Per IP, per route, sliding 60 s window. Best-effort and
+  per-isolate on free tier — not a hard guarantee.
 
 ### TikTok proxy flow (page-as-proxy)
 

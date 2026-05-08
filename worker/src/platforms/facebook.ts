@@ -1,4 +1,5 @@
 import { ResolveError, type ResolveResult, type MediaItem, type ContentKind } from '../types';
+import { FETCH_TIMEOUT_MS, MAX_HTML_BYTES, readBoundedText } from '../util/fetch';
 
 const HEADERS_BROWSER: HeadersInit = {
   'User-Agent':
@@ -47,7 +48,19 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
 }
 
 async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
-  const res = await fetch(url, { headers: HEADERS_BROWSER, redirect: 'follow' });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: HEADERS_BROWSER,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      throw new ResolveError('Facebook timed out', 'FACEBOOK_FETCH_FAILED', 504);
+    }
+    throw new ResolveError('Could not connect to Facebook', 'FACEBOOK_FETCH_FAILED', 502);
+  }
   if (!res.ok) {
     if (res.status === 429) {
       throw new ResolveError(
@@ -72,7 +85,7 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
       { status: res.status },
     );
   }
-  return await res.text();
+  return await readBoundedText(res, MAX_HTML_BYTES);
 }
 
 function extractFromHtml(html: string): MediaItem[] {

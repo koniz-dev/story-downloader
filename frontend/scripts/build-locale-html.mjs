@@ -89,9 +89,26 @@ function buildHead(locale, viteAssets) {
   const url = urlForLocale(locale);
   const ogImage = `${SITE_URL}/og/${locale}.png`;
 
+  // Defence-in-depth CSP. The worker URL is locked to a fixed origin; OG
+  // images / favicons are same-origin. Tailwind requires 'unsafe-inline' for
+  // style attributes generated at runtime — there is no equivalent for scripts.
+  const workerOrigin = 'https://story-dl-worker.koniz-dev.workers.dev';
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' https: data:",
+    `media-src 'self' ${workerOrigin}`,
+    `connect-src 'self' ${workerOrigin}`,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+
   return `<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="${escAttr(csp)}" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="theme-color" content="#020617" />
 

@@ -6,4 +6,4 @@ compatibility_flags = ["nodejs_compat"]
 # Allowed origins for CORS — phẩy nhau, không có khoảng trắng.
 # Đổi thành domain GitHub Pages của bạn sau khi deploy.
 [vars]
-ALLOWED_ORIGINS = "http://localhost:5173,https://*.github.io"
+ALLOWED_ORIGINS = "http://localhost:5173,https://koniz-dev.github.io"

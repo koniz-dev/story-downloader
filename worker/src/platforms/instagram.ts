@@ -1,4 +1,5 @@
 import { ResolveError, type ResolveResult, type MediaItem, type ContentKind } from '../types';
+import { FETCH_TIMEOUT_MS, MAX_HTML_BYTES, readBoundedText } from '../util/fetch';
 
 const HEADERS_BROWSER: HeadersInit = {
   'User-Agent':
@@ -76,12 +77,21 @@ async function tryEmbed(shortcode: string, kind: ContentKind): Promise<MediaItem
   const url = `https://www.instagram.com/${embedPrefix(kind)}/${shortcode}/embed/captioned/`;
   let res: Response;
   try {
-    res = await fetch(url, { headers: HEADERS_BROWSER, redirect: 'follow' });
+    res = await fetch(url, {
+      headers: HEADERS_BROWSER,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
   } catch {
     return [];
   }
   if (!res.ok) return [];
-  const html = await res.text();
+  let html: string;
+  try {
+    html = await readBoundedText(res, MAX_HTML_BYTES);
+  } catch {
+    return [];
+  }
   return parseEmbed(html);
 }
 
@@ -107,7 +117,19 @@ function parseEmbed(html: string): MediaItem[] {
 }
 
 async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
-  const res = await fetch(url, { headers: HEADERS_BROWSER, redirect: 'follow' });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: HEADERS_BROWSER,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      throw new ResolveError('Instagram timed out', 'INSTAGRAM_FETCH_FAILED', 504);
+    }
+    throw new ResolveError('Could not connect to Instagram', 'INSTAGRAM_FETCH_FAILED', 502);
+  }
   if (!res.ok) {
     if (res.status === 429) {
       throw new ResolveError(
@@ -132,7 +154,7 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
       { status: res.status },
     );
   }
-  return await res.text();
+  return await readBoundedText(res, MAX_HTML_BYTES);
 }
 
 function extractFromHtml(html: string): MediaItem[] {

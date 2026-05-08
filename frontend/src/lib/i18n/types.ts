@@ -79,6 +79,9 @@ export interface Translations {
     INVALID_PROTOCOL: string;
     HOST_NOT_ALLOWED: string;
     UPSTREAM_ERROR: string;
+    UPSTREAM_TIMEOUT: string;
+    UPSTREAM_TOO_LARGE: string;
+    RATE_LIMITED: string;
     INTERNAL: string;
     INVALID_INSTAGRAM_URL: string;
     INSTAGRAM_STORY_BLOCKED: string;

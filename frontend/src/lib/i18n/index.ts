@@ -1,4 +1,5 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { Platform, ContentKind } from '../../types';
 import type { Locale, Translations } from './types';
 import { en } from './en';
 import { vi } from './vi';
@@ -77,10 +78,10 @@ export function format(template: string, vars: Record<string, string | number>):
   );
 }
 
-export function platformName(t: Translations, p: 'instagram' | 'facebook'): string {
+export function platformName(t: Translations, p: Platform): string {
   return t.platform[p].name;
 }
 
-export function kindName(t: Translations, k: 'reel' | 'post' | 'video' | 'story'): string {
+export function kindName(t: Translations, k: ContentKind): string {
   return t.kind[k];
 }
