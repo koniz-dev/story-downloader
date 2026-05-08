@@ -1,4 +1,4 @@
-export type Platform = 'instagram' | 'facebook';
+export type Platform = 'instagram' | 'facebook' | 'tiktok';
 export type MediaType = 'image' | 'video';
 export type ContentKind = 'reel' | 'post' | 'video' | 'story';
 

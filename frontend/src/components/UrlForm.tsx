@@ -12,6 +12,7 @@ interface Props {
 const PLACEHOLDERS: Record<Platform, string> = {
   instagram: 'https://www.instagram.com/reel/...',
   facebook: 'https://www.facebook.com/.../posts/...',
+  tiktok: 'https://www.tiktok.com/@user/video/...',
 };
 
 export function UrlForm({ platform, loading, onSubmit }: Props) {

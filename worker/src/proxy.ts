@@ -1,10 +1,21 @@
 import { ResolveError } from './types';
+import {
+  TIKTOK_BROWSER_UA,
+  extractPlayAddr,
+  fetchTikTokPage,
+  isTikTokPageUrl,
+  parseTikTokItemStruct,
+} from './platforms/tiktok';
 
 const ALLOWED_HOSTS = [
   /\.cdninstagram\.com$/i,
   /\.fbcdn\.net$/i,
   /\.facebook\.com$/i,
   /\.instagram\.com$/i,
+  /\.tiktokcdn\.com$/i,
+  /\.tiktokcdn-us\.com$/i,
+  /\.tiktokcdn-eu\.com$/i,
+  /\.tiktok\.com$/i,
 ];
 
 export async function proxyMedia(targetUrl: string, filename: string | null): Promise<Response> {
@@ -28,7 +39,15 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
     );
   }
 
-  const referer = url.hostname.includes('instagram') ? 'https://www.instagram.com/' : 'https://www.facebook.com/';
+  if (isTikTokPageUrl(url)) {
+    return await proxyTikTokVideo(targetUrl, filename);
+  }
+
+  const referer = url.hostname.includes('instagram')
+    ? 'https://www.instagram.com/'
+    : url.hostname.includes('tiktok')
+      ? 'https://www.tiktok.com/'
+      : 'https://www.facebook.com/';
 
   const upstream = await fetch(targetUrl, {
     headers: {
@@ -48,6 +67,58 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
     );
   }
 
+  return streamingResponse(upstream, filename);
+}
+
+// TikTok video CDN URLs are session-bound: the playAddr signature is tied to
+// the cookies set by the page that produced it. We re-fetch the page here so
+// the playAddr we extract and the cookies we forward come from the same fetch.
+async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promise<Response> {
+  const { html, cookies } = await fetchTikTokPage(pageUrl);
+  const itemStruct = parseTikTokItemStruct(html);
+  const playAddr = itemStruct ? extractPlayAddr(itemStruct) : null;
+  if (!playAddr) {
+    throw new ResolveError(
+      'Could not extract video URL from TikTok page.',
+      'TIKTOK_NO_MEDIA',
+      404,
+    );
+  }
+
+  const upstream = await fetch(playAddr, {
+    headers: {
+      'User-Agent': TIKTOK_BROWSER_UA,
+      Referer: 'https://www.tiktok.com/',
+      ...(cookies ? { Cookie: cookies } : {}),
+    },
+    redirect: 'follow',
+  });
+
+  if (!upstream.ok || !upstream.body) {
+    throw new ResolveError(
+      `TikTok CDN returned ${upstream.status}`,
+      'UPSTREAM_ERROR',
+      502,
+      { status: upstream.status },
+    );
+  }
+
+  // If TikTok served a captcha / interstitial instead of the real video,
+  // upstream's content-type will be text/html. Catch that explicitly so we
+  // don't stream HTML to the user as a fake .mp4.
+  const ct = upstream.headers.get('Content-Type') ?? '';
+  if (!ct.startsWith('video/') && !ct.startsWith('image/')) {
+    throw new ResolveError(
+      'TikTok CDN returned an unexpected response. The video may be geo-restricted or require login.',
+      'TIKTOK_GEO_BLOCKED',
+      403,
+    );
+  }
+
+  return streamingResponse(upstream, filename);
+}
+
+function streamingResponse(upstream: Response, filename: string | null): Response {
   const headers = new Headers();
   const contentType = upstream.headers.get('Content-Type') ?? 'application/octet-stream';
   const contentLength = upstream.headers.get('Content-Length');

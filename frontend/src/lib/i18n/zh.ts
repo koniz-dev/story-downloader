@@ -3,7 +3,7 @@ import type { Translations } from './types';
 export const zh: Translations = {
   app: {
     title: 'Social Downloader',
-    subtitle: '下载 Instagram 与 Facebook 的公开 Reel、帖子和视频',
+    subtitle: '下载 Instagram、Facebook 和 TikTok 的公开视频',
     footer: '仅供个人使用。请尊重创作者的隐私和版权。',
   },
   language: {
@@ -17,6 +17,7 @@ export const zh: Translations = {
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel / 帖子 / IGTV' },
     facebook: { name: 'Facebook', kinds: '帖子 / 视频 / Reel' },
+    tiktok: { name: 'TikTok', kinds: '视频 / 图片' },
   },
   kind: {
     reel: 'Reel',
@@ -53,6 +54,20 @@ export const zh: Translations = {
         'Facebook 快拍几乎都是私密的 — 通常无法下载。',
       ],
     },
+    tiktok: {
+      intro: '支持公开的 TikTok 视频和图片轮播。下载的视频会带有 TikTok 水印。',
+      steps: [
+        '打开 TikTok app 或网页,进入要下载的视频。',
+        '点击「分享」(箭头图标)→ 「复制链接」。',
+        '或在桌面端,从地址栏复制 URL。',
+        '把链接粘贴到下方输入框。',
+      ],
+      warnings: [
+        '下载的视频始终带有 TikTok 水印 — 无水印版本需要登录。',
+        'TikTok 偶尔会限流服务器请求。如看到「请重试」提示,请等待约 30 秒后重试。',
+        '部分视频受地区限制,无法匿名下载。',
+      ],
+    },
   },
   form: {
     label: '粘贴 {platform} URL',
@@ -84,7 +99,7 @@ export const zh: Translations = {
     NETWORK_ERROR: '网络错误。请检查互联网连接后重试。',
     WORKER_HTTP_ERROR: 'Worker 返回 {status}。',
     MISSING_URL: '缺少 URL。',
-    UNSUPPORTED_PLATFORM: 'URL 不属于 Instagram 或 Facebook。',
+    UNSUPPORTED_PLATFORM: 'URL 不属于 Instagram、Facebook 或 TikTok。',
     INVALID_URL: 'URL 无效。',
     INVALID_PROTOCOL: '仅接受 https://。',
     HOST_NOT_ALLOWED: '域名 {host} 不在白名单中。',
@@ -104,5 +119,11 @@ export const zh: Translations = {
     FACEBOOK_NOT_FOUND: '此 Facebook 帖子不存在或已被删除。',
     FACEBOOK_STORY_EXPIRED: '此 Facebook 快拍不存在或已超过 24 小时有效期。',
     FACEBOOK_FETCH_FAILED: 'Facebook 返回 {status}。请稍后重试。',
+    INVALID_TIKTOK_URL: '无效的 TikTok URL。支持:视频 (/@<user>/video/<id>)、图片 (/@<user>/photo/<id>)、短链接 (vm.tiktok.com、tiktok.com/t/)。',
+    TIKTOK_NO_MEDIA: '无法提取媒体。视频可能为私密、地区受限,或 TikTok 已更改页面结构。',
+    TIKTOK_RATE_LIMITED: 'TikTok 暂时拦截了请求。请等待约 30 秒后重试。',
+    TIKTOK_NOT_FOUND: '此 TikTok 视频不存在或已被删除。',
+    TIKTOK_FETCH_FAILED: 'TikTok 返回 {status}。请稍后重试。',
+    TIKTOK_GEO_BLOCKED: 'TikTok 拦截了请求。视频可能受地区限制或需要登录。',
   },
 };

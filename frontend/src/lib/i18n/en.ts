@@ -3,7 +3,7 @@ import type { Translations } from './types';
 export const en: Translations = {
   app: {
     title: 'Social Downloader',
-    subtitle: 'Download public Reels, Posts and Videos from Instagram & Facebook',
+    subtitle: 'Download public videos from Instagram, Facebook and TikTok',
     footer: 'For personal use only. Respect the privacy and copyright of content creators.',
   },
   language: {
@@ -17,6 +17,7 @@ export const en: Translations = {
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel, Post, IGTV' },
     facebook: { name: 'Facebook', kinds: 'Post, Video, Reel' },
+    tiktok: { name: 'TikTok', kinds: 'Video, Photo' },
   },
   kind: {
     reel: 'Reel',
@@ -53,6 +54,20 @@ export const en: Translations = {
         'Facebook Stories are almost always private — they generally cannot be downloaded.',
       ],
     },
+    tiktok: {
+      intro: 'Supports public TikTok videos and photo slideshows. The downloaded video keeps TikTok’s watermark.',
+      steps: [
+        'Open the TikTok app or website and go to the video you want.',
+        'Tap "Share" (the arrow icon) → "Copy link".',
+        'Or on desktop, copy the URL from the address bar.',
+        'Paste the link in the box below.',
+      ],
+      warnings: [
+        'Downloaded videos always include the TikTok watermark — clean versions require login.',
+        'TikTok occasionally rate-limits the server. If you see a "try again" error, wait ~30 seconds.',
+        'Some videos are geo-restricted and cannot be fetched anonymously.',
+      ],
+    },
   },
   form: {
     label: 'Paste {platform} URL',
@@ -84,7 +99,7 @@ export const en: Translations = {
     NETWORK_ERROR: 'Network error. Check your internet connection and try again.',
     WORKER_HTTP_ERROR: 'Worker returned {status}.',
     MISSING_URL: 'Missing URL.',
-    UNSUPPORTED_PLATFORM: 'URL is not Instagram or Facebook.',
+    UNSUPPORTED_PLATFORM: 'URL is not Instagram, Facebook, or TikTok.',
     INVALID_URL: 'Invalid URL.',
     INVALID_PROTOCOL: 'Only https:// is accepted.',
     HOST_NOT_ALLOWED: 'Domain {host} is not in the whitelist.',
@@ -104,5 +119,11 @@ export const en: Translations = {
     FACEBOOK_NOT_FOUND: 'This Facebook post does not exist or has been deleted.',
     FACEBOOK_STORY_EXPIRED: 'This Facebook story does not exist or has expired (24h limit).',
     FACEBOOK_FETCH_FAILED: 'Facebook returned {status}. Please try again later.',
+    INVALID_TIKTOK_URL: 'Invalid TikTok URL. Supported: video (/@<user>/video/<id>), photo (/@<user>/photo/<id>), short links (vm.tiktok.com, tiktok.com/t/).',
+    TIKTOK_NO_MEDIA: 'Could not extract media. The video may be private, geo-restricted, or TikTok has changed its page structure.',
+    TIKTOK_RATE_LIMITED: 'TikTok temporarily blocked the request. Wait ~30 seconds and try again.',
+    TIKTOK_NOT_FOUND: 'This TikTok video does not exist or has been deleted.',
+    TIKTOK_FETCH_FAILED: 'TikTok returned {status}. Please try again later.',
+    TIKTOK_GEO_BLOCKED: 'TikTok blocked the request. The video may be geo-restricted or require login.',
   },
 };

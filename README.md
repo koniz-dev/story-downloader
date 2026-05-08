@@ -1,7 +1,8 @@
-# Social Downloader — Free Online Instagram & Facebook Video Downloader
+# Social Downloader — Free Online Instagram, Facebook & TikTok Video Downloader
 
-> Save public **Reels, Posts, IGTV and Facebook Videos** straight to your
-> device — no signup, no software, no watermark. Paste a link, hit download.
+> Save public **Reels, Posts, IGTV, Facebook Videos and TikTok videos**
+> straight to your device — no signup, no software. Paste a link, hit
+> download.
 
 **🌐 Live demo:** [koniz-dev.github.io/story-downloader](https://koniz-dev.github.io/story-downloader/)
 &nbsp;•&nbsp; **🌍 5 languages:** English · Tiếng Việt · 日本語 · 한국어 · 中文
@@ -13,6 +14,8 @@
 - **🎬 Instagram Reel & Post downloader** — Reels, photo posts, carousels, IGTV.
 - **📘 Facebook video downloader** — public posts, Reels, Watch videos, fb.watch
   short links.
+- **🎵 TikTok video downloader** — public videos, photo slideshows, vm.tiktok.com
+  and tiktok.com/t/ short links. Watermarked.
 - **⚡ One-click downloads** — paste the URL, get a direct save-to-disk button.
 - **🔒 Private by design** — runs entirely in your browser + a stateless
   serverless Worker. No accounts, no tracking pixels, no history kept.
@@ -26,6 +29,7 @@
 | --------- | ----------------------------------------------- | --------------------------------------------- |
 | Instagram | Reel, Post (single image + carousel), IGTV      | Account must be **public**                    |
 | Facebook  | Post, Video, Reel, fb.watch                     | Audience must be **Public**                   |
+| TikTok    | Video, Photo slideshow, vm.tiktok.com / /t/     | Public only · **watermarked**                 |
 | Stories   | Best-effort                                     | Most fail — Meta requires login (see below)   |
 
 > ⚠ This tool only works with **public** content (Open Graph meta tags from
@@ -38,7 +42,7 @@
 ```mermaid
 flowchart TD
     A[GitHub Pages<br/>Vite + React + Tailwind] -->|POST /api/resolve<br/>GET /api/proxy| B[Cloudflare Worker<br/>story-dl-worker]
-    B -->|fetch + parse og: meta tags| C[Instagram / Facebook<br/>public endpoints]
+    B -->|fetch + parse og:meta / JSON blob| C[Instagram / Facebook / TikTok<br/>public endpoints]
 ```
 
 The browser sends a URL to a Cloudflare Worker. The Worker fetches the public
@@ -80,9 +84,9 @@ Full setup, deployment, and i18n instructions in
 
 - [x] Instagram Reel / Post / IGTV
 - [x] Facebook Post / Video / Reel / fb.watch
+- [x] TikTok video / photo slideshow / short links (watermarked)
 - [x] Per-platform guide UI with platform selector
 - [x] i18n: English, Vietnamese, Japanese, Korean, Chinese
-- [ ] TikTok support
 - [ ] Bulk download from multiple URLs
 - [ ] PWA + mobile share-target
 - [ ] Dark / light mode toggle

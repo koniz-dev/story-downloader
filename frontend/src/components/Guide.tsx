@@ -13,6 +13,11 @@ const EXAMPLES: Record<Platform, { label: string; url: string }[]> = {
     { label: 'Reel', url: 'https://www.facebook.com/reel/123456789' },
     { label: 'fb.watch', url: 'https://fb.watch/AbCdEfGh/' },
   ],
+  tiktok: [
+    { label: 'Video', url: 'https://www.tiktok.com/@user/video/1234567890' },
+    { label: 'Photo', url: 'https://www.tiktok.com/@user/photo/1234567890' },
+    { label: 'Short', url: 'https://vm.tiktok.com/ABCxyz/' },
+  ],
 };
 
 export function Guide({ platform }: { platform: Platform }) {

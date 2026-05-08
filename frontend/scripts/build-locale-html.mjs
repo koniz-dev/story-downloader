@@ -71,6 +71,8 @@ function buildJsonLd(locale, copy) {
       'Download public IGTV videos',
       'Download public Facebook videos and Reels',
       'Support fb.watch short links',
+      'Download public TikTok videos and photo slideshows',
+      'Support vm.tiktok.com short links',
       'Multilingual UI (English, Vietnamese, Japanese, Korean, Chinese)',
     ],
     author: {

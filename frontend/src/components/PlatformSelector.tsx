@@ -7,12 +7,12 @@ interface Props {
   onChange: (platform: Platform) => void;
 }
 
-const PLATFORMS: Platform[] = ['instagram', 'facebook'];
+const PLATFORMS: Platform[] = ['instagram', 'facebook', 'tiktok'];
 
 export function PlatformSelector({ value, onChange }: Props) {
   const { t } = useI18n();
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {PLATFORMS.map((p) => {
         const selected = value === p;
         const meta = t.platform[p];

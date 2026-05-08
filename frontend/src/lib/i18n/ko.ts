@@ -3,7 +3,7 @@ import type { Translations } from './types';
 export const ko: Translations = {
   app: {
     title: 'Social Downloader',
-    subtitle: 'Instagram과 Facebook의 공개 릴스, 게시물, 동영상 다운로드',
+    subtitle: 'Instagram, Facebook, TikTok의 공개 동영상 다운로드',
     footer: '개인 용도로만 사용하세요. 창작자의 개인정보와 저작권을 존중해 주세요.',
   },
   language: {
@@ -17,6 +17,7 @@ export const ko: Translations = {
   platform: {
     instagram: { name: 'Instagram', kinds: '릴스 / 게시물 / IGTV' },
     facebook: { name: 'Facebook', kinds: '게시물 / 동영상 / 릴스' },
+    tiktok: { name: 'TikTok', kinds: '동영상 / 사진' },
   },
   kind: {
     reel: '릴스',
@@ -53,6 +54,20 @@ export const ko: Translations = {
         'Facebook 스토리는 거의 항상 비공개여서 일반적으로 다운로드할 수 없습니다.',
       ],
     },
+    tiktok: {
+      intro: '공개 TikTok 동영상과 사진 슬라이드쇼를 지원합니다. 다운로드한 동영상에는 TikTok 워터마크가 포함됩니다.',
+      steps: [
+        'TikTok 앱이나 웹에서 원하는 동영상을 엽니다.',
+        '"공유"(화살표 아이콘) → "링크 복사"를 누릅니다.',
+        '또는 데스크톱에서 주소창에서 URL을 복사합니다.',
+        '아래 입력란에 링크를 붙여넣습니다.',
+      ],
+      warnings: [
+        '다운로드된 동영상에는 항상 TikTok 워터마크가 포함됩니다 — 워터마크 없는 버전은 로그인이 필요합니다.',
+        'TikTok이 가끔 서버 요청을 제한합니다. "다시 시도" 오류가 보이면 약 30초 기다렸다가 다시 시도하세요.',
+        '일부 동영상은 지역 제한으로 익명 요청에서 가져올 수 없습니다.',
+      ],
+    },
   },
   form: {
     label: '{platform} URL 붙여넣기',
@@ -84,7 +99,7 @@ export const ko: Translations = {
     NETWORK_ERROR: '네트워크 오류입니다. 인터넷 연결을 확인하고 다시 시도하세요.',
     WORKER_HTTP_ERROR: 'Worker가 {status}을(를) 반환했습니다.',
     MISSING_URL: 'URL이 누락되었습니다.',
-    UNSUPPORTED_PLATFORM: 'URL이 Instagram이나 Facebook이 아닙니다.',
+    UNSUPPORTED_PLATFORM: 'URL이 Instagram, Facebook, TikTok 중 어느 것도 아닙니다.',
     INVALID_URL: '유효하지 않은 URL입니다.',
     INVALID_PROTOCOL: 'https://만 허용됩니다.',
     HOST_NOT_ALLOWED: '도메인 {host}은(는) 허용 목록에 없습니다.',
@@ -104,5 +119,11 @@ export const ko: Translations = {
     FACEBOOK_NOT_FOUND: '이 Facebook 게시물이 존재하지 않거나 삭제되었습니다.',
     FACEBOOK_STORY_EXPIRED: '이 Facebook 스토리가 존재하지 않거나 24시간이 지나 만료되었습니다.',
     FACEBOOK_FETCH_FAILED: 'Facebook이 {status}을(를) 반환했습니다. 잠시 후 다시 시도해 주세요.',
+    INVALID_TIKTOK_URL: '유효하지 않은 TikTok URL입니다. 지원: 동영상 (/@<user>/video/<id>), 사진 (/@<user>/photo/<id>), 단축 링크 (vm.tiktok.com, tiktok.com/t/).',
+    TIKTOK_NO_MEDIA: '미디어를 가져올 수 없습니다. 동영상이 비공개·지역 제한이거나 TikTok의 페이지 구조가 변경되었을 수 있습니다.',
+    TIKTOK_RATE_LIMITED: 'TikTok이 요청을 일시적으로 차단했습니다. 약 30초 후 다시 시도하세요.',
+    TIKTOK_NOT_FOUND: '이 TikTok 동영상이 존재하지 않거나 삭제되었습니다.',
+    TIKTOK_FETCH_FAILED: 'TikTok이 {status}을(를) 반환했습니다. 잠시 후 다시 시도해 주세요.',
+    TIKTOK_GEO_BLOCKED: 'TikTok이 요청을 차단했습니다. 동영상이 지역 제한되었거나 로그인이 필요할 수 있습니다.',
   },
 };

@@ -1,6 +1,7 @@
 import { Router, error, json } from 'itty-router';
 import { resolveInstagram } from './platforms/instagram';
 import { resolveFacebook } from './platforms/facebook';
+import { resolveTikTok } from './platforms/tiktok';
 import { proxyMedia } from './proxy';
 import { corsHeaders, handlePreflight } from './cors';
 import { ResolveError, type Env, type Platform } from './types';
@@ -18,11 +19,16 @@ router.post('/api/resolve', async (request: Request) => {
 
   const platform = detectPlatform(body.url);
   if (!platform) {
-    throw new ResolveError('URL is not Instagram or Facebook', 'UNSUPPORTED_PLATFORM');
+    throw new ResolveError('URL is not Instagram, Facebook, or TikTok', 'UNSUPPORTED_PLATFORM');
   }
 
   try {
-    const result = platform === 'instagram' ? await resolveInstagram(body.url) : await resolveFacebook(body.url);
+    const result =
+      platform === 'instagram'
+        ? await resolveInstagram(body.url)
+        : platform === 'facebook'
+          ? await resolveFacebook(body.url)
+          : await resolveTikTok(body.url);
     logEvent('resolve.ok', { platform, kind: result.kind, items: result.mediaItems.length, ms: Date.now() - started });
     return json(result);
   } catch (e) {
@@ -50,6 +56,7 @@ function detectPlatform(rawUrl: string): Platform | null {
     const u = new URL(rawUrl);
     if (/(?:^|\.)instagram\.com$/i.test(u.hostname)) return 'instagram';
     if (/(?:^|\.)facebook\.com$|(?:^|\.)fb\.com$|(?:^|\.)fb\.watch$/i.test(u.hostname)) return 'facebook';
+    if (/(?:^|\.)tiktok\.com$/i.test(u.hostname)) return 'tiktok';
   } catch {
     return null;
   }

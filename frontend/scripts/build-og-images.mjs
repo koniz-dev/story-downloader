@@ -172,7 +172,7 @@ function template(copy) {
         copy.ogSubtitle,
       ),
     ),
-    // Footer: pill chips for IG / FB + URL
+    // Footer: pill chips for IG / FB / TikTok + URL
     h(
       'div',
       {
@@ -217,6 +217,22 @@ function template(copy) {
           },
           'Facebook',
         ),
+        h(
+          'div',
+          {
+            style: {
+              padding: '10px 22px',
+              borderRadius: '999px',
+              background: 'rgba(45, 212, 191, 0.18)',
+              border: '1px solid rgba(45, 212, 191, 0.45)',
+              color: '#99f6e4',
+              fontSize: '24px',
+              fontWeight: 600,
+              display: 'flex',
+            },
+          },
+          'TikTok',
+        ),
       ),
       h(
         'div',
@@ -244,6 +260,7 @@ async function buildOne(locale) {
     copy.ogSubtitle,
     'Instagram',
     'Facebook',
+    'TikTok',
     'koniz-dev.github.io/story-downloader',
     'S',
   ].join('');

@@ -17,6 +17,7 @@ export interface Translations {
   platform: {
     instagram: { name: string; kinds: string };
     facebook: { name: string; kinds: string };
+    tiktok: { name: string; kinds: string };
   };
   kind: {
     reel: string;
@@ -33,6 +34,11 @@ export interface Translations {
       warnings: string[];
     };
     facebook: {
+      intro: string;
+      steps: [string, string, string, string];
+      warnings: string[];
+    };
+    tiktok: {
       intro: string;
       steps: [string, string, string, string];
       warnings: string[];
@@ -88,6 +94,12 @@ export interface Translations {
     FACEBOOK_NOT_FOUND: string;
     FACEBOOK_STORY_EXPIRED: string;
     FACEBOOK_FETCH_FAILED: string;
+    INVALID_TIKTOK_URL: string;
+    TIKTOK_NO_MEDIA: string;
+    TIKTOK_RATE_LIMITED: string;
+    TIKTOK_NOT_FOUND: string;
+    TIKTOK_FETCH_FAILED: string;
+    TIKTOK_GEO_BLOCKED: string;
   };
 }
 

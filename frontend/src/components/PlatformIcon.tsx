@@ -18,6 +18,27 @@ export function PlatformIcon({ platform, className }: { platform: Platform; clas
       </svg>
     );
   }
+  if (platform === 'tiktok') {
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        <rect x="2" y="2" width="20" height="20" rx="5" fill="#010101" />
+        <path
+          d="M16.5 8.6a4.6 4.6 0 0 1-2.7-.9v5.7a3.7 3.7 0 1 1-3.7-3.7c.2 0 .4 0 .6.1v1.9a1.9 1.9 0 1 0 1.3 1.8V5.5h1.9a2.7 2.7 0 0 0 2.6 2.4v.7z"
+          fill="#25F4EE"
+          transform="translate(-0.6 0.4)"
+        />
+        <path
+          d="M16.5 8.6a4.6 4.6 0 0 1-2.7-.9v5.7a3.7 3.7 0 1 1-3.7-3.7c.2 0 .4 0 .6.1v1.9a1.9 1.9 0 1 0 1.3 1.8V5.5h1.9a2.7 2.7 0 0 0 2.6 2.4v.7z"
+          fill="#FE2C55"
+          transform="translate(0.6 -0.4)"
+        />
+        <path
+          d="M16.5 8.6a4.6 4.6 0 0 1-2.7-.9v5.7a3.7 3.7 0 1 1-3.7-3.7c.2 0 .4 0 .6.1v1.9a1.9 1.9 0 1 0 1.3 1.8V5.5h1.9a2.7 2.7 0 0 0 2.6 2.4v.7z"
+          fill="#fff"
+        />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <rect x="2" y="2" width="20" height="20" rx="5" fill="#1877F2" />

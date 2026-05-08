@@ -11,8 +11,12 @@ marketing-flavored version — this file is the engineering source of truth.
   only — Open Graph meta tags from anonymous requests.
 - **Facebook**: Post, Video, Reel, `fb.watch` short links. Audience must be
   Public.
-- **Stories** (best-effort): kept in the URL parser for both platforms but
-  almost always fails — Meta requires an authenticated session. Surfaced as
+- **TikTok**: Video, Photo slideshow, `vm.tiktok.com` and `tiktok.com/t/`
+  short links. Public videos only. Downloads always include the TikTok
+  watermark (clean versions require login). The proxy uses a "page-as-proxy"
+  flow because TikTok CDN URLs are session-signed (see `docs/api.md`).
+- **Stories** (best-effort): kept in the URL parser for IG/FB but almost
+  always fails — Meta requires an authenticated session. Surfaced as
   `*_STORY_BLOCKED` / `*_STORY_EXPIRED` errors.
 
 ### URL handling
@@ -32,6 +36,14 @@ marketing-flavored version — this file is the engineering source of truth.
 - Degraded-mode banner: when only a thumbnail can be retrieved (e.g. IG video
   blocked for anonymous requests), the UI tells the user explicitly instead
   of silently failing.
+
+### TikTok rate-limit handling
+
+- **`TIKTOK_RATE_LIMITED` detection**: when TikTok soft-blocks a CF Worker
+  egress IP it 302's every URL to a regional landing page
+  (`/<region>/about`). The parser detects the redirect path and returns a
+  clear "wait 30 seconds and retry" error instead of a generic
+  "no media" failure.
 
 ### Internationalization
 
@@ -84,8 +96,6 @@ marketing-flavored version — this file is the engineering source of truth.
 
 ### Content
 
-- **TikTok** — `tiktok.com/@user/video/<id>` and `vm.tiktok.com/<id>`. Same
-  pattern as IG/FB: parse OG tags from public page, proxy the CDN URL.
 - **Bulk download**: paste 5–20 URLs at once, download as zip.
 - **Thread / Twitter / X media** — open question whether to include given the
   ToS landscape.

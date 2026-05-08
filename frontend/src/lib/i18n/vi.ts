@@ -3,7 +3,7 @@ import type { Translations } from './types';
 export const vi: Translations = {
   app: {
     title: 'Social Downloader',
-    subtitle: 'Tải Reel, Post, Video công khai từ Instagram & Facebook',
+    subtitle: 'Tải video công khai từ Instagram, Facebook và TikTok',
     footer: 'Tool dành cho mục đích cá nhân. Tôn trọng quyền riêng tư và bản quyền của người tạo nội dung.',
   },
   language: {
@@ -17,6 +17,7 @@ export const vi: Translations = {
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel, Post, IGTV' },
     facebook: { name: 'Facebook', kinds: 'Post, Video, Reel' },
+    tiktok: { name: 'TikTok', kinds: 'Video, Ảnh' },
   },
   kind: {
     reel: 'Reel',
@@ -53,6 +54,20 @@ export const vi: Translations = {
         'Story Facebook hầu như luôn riêng tư — gần như không tải được.',
       ],
     },
+    tiktok: {
+      intro: 'Hỗ trợ video và slideshow ảnh công khai trên TikTok. Video tải về sẽ có watermark TikTok.',
+      steps: [
+        'Mở TikTok app hoặc web, vào video bạn muốn tải.',
+        'Bấm "Chia sẻ" (icon mũi tên) → "Sao chép liên kết".',
+        'Hoặc trên desktop, copy URL từ thanh địa chỉ.',
+        'Dán link vào ô bên dưới.',
+      ],
+      warnings: [
+        'Video tải về luôn có watermark TikTok — bản không watermark cần đăng nhập.',
+        'TikTok thỉnh thoảng rate-limit server. Nếu thấy lỗi "thử lại", đợi ~30 giây rồi thử lại.',
+        'Một số video bị giới hạn theo khu vực, không tải được anonymous.',
+      ],
+    },
   },
   form: {
     label: 'Dán URL {platform}',
@@ -84,7 +99,7 @@ export const vi: Translations = {
     NETWORK_ERROR: 'Lỗi mạng. Kiểm tra kết nối internet và thử lại.',
     WORKER_HTTP_ERROR: 'Worker trả về {status}.',
     MISSING_URL: 'Thiếu URL.',
-    UNSUPPORTED_PLATFORM: 'URL không phải Instagram hoặc Facebook.',
+    UNSUPPORTED_PLATFORM: 'URL không phải Instagram, Facebook hoặc TikTok.',
     INVALID_URL: 'URL không hợp lệ.',
     INVALID_PROTOCOL: 'Chỉ chấp nhận https://.',
     HOST_NOT_ALLOWED: 'Domain {host} không nằm trong whitelist.',
@@ -104,5 +119,11 @@ export const vi: Translations = {
     FACEBOOK_NOT_FOUND: 'Bài Facebook không tồn tại hoặc đã bị xoá.',
     FACEBOOK_STORY_EXPIRED: 'Story Facebook không tồn tại hoặc đã hết hạn 24h.',
     FACEBOOK_FETCH_FAILED: 'Facebook trả về {status}. Vui lòng thử lại sau.',
+    INVALID_TIKTOK_URL: 'URL TikTok không hợp lệ. Hỗ trợ: video (/@<user>/video/<id>), photo (/@<user>/photo/<id>), short link (vm.tiktok.com, tiktok.com/t/).',
+    TIKTOK_NO_MEDIA: 'Không trích xuất được media. Video có thể là riêng tư, bị giới hạn khu vực, hoặc TikTok đã đổi cấu trúc trang.',
+    TIKTOK_RATE_LIMITED: 'TikTok tạm chặn request. Đợi ~30 giây rồi thử lại.',
+    TIKTOK_NOT_FOUND: 'Video TikTok không tồn tại hoặc đã bị xoá.',
+    TIKTOK_FETCH_FAILED: 'TikTok trả về {status}. Vui lòng thử lại sau.',
+    TIKTOK_GEO_BLOCKED: 'TikTok chặn request. Video có thể bị giới hạn khu vực hoặc cần đăng nhập.',
   },
 };

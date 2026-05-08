@@ -13,7 +13,7 @@ Liveness probe. Returns `200 OK`.
 
 ## `POST /api/resolve`
 
-Resolves a public Instagram/Facebook URL to a list of downloadable media items.
+Resolves a public Instagram/Facebook/TikTok URL to a list of downloadable media items.
 
 ### Supported URL shapes
 
@@ -33,6 +33,18 @@ Resolves a public Instagram/Facebook URL to a list of downloadable media items.
 - `/reel/<id>`
 - `fb.watch/<id>`
 - `/stories/<id>` *(best-effort — usually private)*
+
+**TikTok**
+
+- `/@<user>/video/<id>` *(standard video URL)*
+- `/@<user>/photo/<id>` *(photo slideshow)*
+- `/v/<id>` *(legacy mobile-share URL — `m.tiktok.com` works too)*
+- `/t/<short>` *(short link, redirects to canonical)*
+- `vm.tiktok.com/<short>` *(short link, redirects to canonical)*
+
+For TikTok video items, `mediaItems[].url` is the original page URL — the
+proxy re-fetches the page on download to acquire fresh session cookies (TikTok
+CDN URLs are session-bound; see `docs/limitations.md`).
 
 ### Request
 
@@ -69,9 +81,10 @@ restricting video access for the anonymous request).
 | `MISSING_URL`              | The `url` field was missing from the request body.                   |
 | `INVALID_URL`              | The provided string is not a valid URL.                              |
 | `INVALID_PROTOCOL`         | Only `https://` URLs are accepted.                                   |
-| `UNSUPPORTED_PLATFORM`     | URL is not Instagram or Facebook.                                    |
+| `UNSUPPORTED_PLATFORM`     | URL is not Instagram, Facebook, or TikTok.                           |
 | `INVALID_INSTAGRAM_URL`    | Instagram URL did not match a supported shape.                       |
 | `INVALID_FACEBOOK_URL`     | Facebook URL did not match a supported shape.                        |
+| `INVALID_TIKTOK_URL`       | TikTok URL did not match a supported shape.                          |
 | `HOST_NOT_ALLOWED`         | The proxy refused the host (whitelist below).                        |
 | `INSTAGRAM_NO_MEDIA`       | Page parsed but no media found (private, deleted, structure change). |
 | `INSTAGRAM_STORY_BLOCKED`  | Instagram redirected to login — anonymous access denied.             |
@@ -83,6 +96,11 @@ restricting video access for the anonymous request).
 | `FACEBOOK_RATE_LIMITED`    | Same as IG variant, for Facebook.                                    |
 | `FACEBOOK_NOT_FOUND`       | Same as IG variant, for Facebook.                                    |
 | `FACEBOOK_FETCH_FAILED`    | Same as IG variant, for Facebook.                                    |
+| `TIKTOK_NO_MEDIA`          | Page parsed but no media found (private, geo-blocked, structure).    |
+| `TIKTOK_RATE_LIMITED`      | TikTok soft-blocked the CF Worker egress (302 to `/<region>/about`). Wait ~30s. |
+| `TIKTOK_NOT_FOUND`         | Video does not exist or has been deleted.                            |
+| `TIKTOK_FETCH_FAILED`      | Upstream returned an unexpected status.                              |
+| `TIKTOK_GEO_BLOCKED`       | TikTok refused the request — geo-restricted or login required.       |
 | `INTERNAL`                 | Unhandled exception — check Worker logs.                             |
 
 ## `GET /api/proxy?url=<encoded>&filename=<optional>`
@@ -92,12 +110,31 @@ attachment` so the browser writes a file to disk instead of opening it.
 
 ### Host whitelist
 
-Only these CDN hosts are accepted:
+Only these hosts are accepted:
 
 - `*.cdninstagram.com`
 - `*.fbcdn.net`
 - `*.facebook.com`
 - `*.instagram.com`
+- `*.tiktokcdn.com`, `*.tiktokcdn-us.com`, `*.tiktokcdn-eu.com`
+- `*.tiktok.com` *(includes `www.tiktok.com`, `m.tiktok.com`, `vm.tiktok.com` — used by the TikTok page-as-proxy flow)*
 
 Any other host returns `400 HOST_NOT_ALLOWED`. This prevents the Worker from
 being abused as an open proxy.
+
+### TikTok proxy flow (page-as-proxy)
+
+For TikTok video downloads the proxy receives the original page URL (not a
+CDN URL). It then:
+
+1. Fetches the page with a browser User-Agent and follows redirects.
+2. Captures session cookies (`ttwid`, `tt_chain_token`, `msToken`, etc.) from
+   the response.
+3. Extracts the `playAddr` from the embedded `__UNIVERSAL_DATA_FOR_REHYDRATION__`
+   JSON blob.
+4. Fetches the `playAddr` with the captured cookies + `Referer:
+   https://www.tiktok.com/`.
+5. Streams the resulting `video/mp4` body to the client.
+
+This adds one HTTP request per TikTok download compared to the IG/FB flow but
+is necessary because TikTok CDN URLs are session-signed.

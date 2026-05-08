@@ -3,7 +3,7 @@ import type { Translations } from './types';
 export const ja: Translations = {
   app: {
     title: 'Social Downloader',
-    subtitle: 'Instagram と Facebook の公開リール・投稿・動画をダウンロード',
+    subtitle: 'Instagram・Facebook・TikTok の公開動画をダウンロード',
     footer: '個人利用のみ。コンテンツ制作者のプライバシーと著作権を尊重してください。',
   },
   language: {
@@ -17,6 +17,7 @@ export const ja: Translations = {
   platform: {
     instagram: { name: 'Instagram', kinds: 'リール / 投稿 / IGTV' },
     facebook: { name: 'Facebook', kinds: '投稿 / 動画 / リール' },
+    tiktok: { name: 'TikTok', kinds: '動画 / 写真' },
   },
   kind: {
     reel: 'リール',
@@ -53,6 +54,20 @@ export const ja: Translations = {
         'Facebook ストーリーはほぼ常に非公開です — 通常はダウンロードできません。',
       ],
     },
+    tiktok: {
+      intro: 'TikTok の公開動画と写真スライドショーに対応します。ダウンロードした動画には TikTok のウォーターマークが入ります。',
+      steps: [
+        'TikTok アプリまたは Web を開き、対象の動画を表示します。',
+        '「シェア」(矢印アイコン)→「リンクをコピー」をタップします。',
+        'デスクトップではアドレスバーから URL をコピーします。',
+        '下のボックスにリンクを貼り付けます。',
+      ],
+      warnings: [
+        'ダウンロードした動画には常に TikTok のウォーターマークが含まれます — クリーン版にはログインが必要です。',
+        'TikTok がサーバーを一時的にレート制限することがあります。「再試行」エラーが出たら 30 秒ほど待って再度お試しください。',
+        '一部の動画は地域制限により匿名では取得できません。',
+      ],
+    },
   },
   form: {
     label: '{platform} の URL を貼り付け',
@@ -84,7 +99,7 @@ export const ja: Translations = {
     NETWORK_ERROR: 'ネットワークエラー。インターネット接続を確認してから、もう一度お試しください。',
     WORKER_HTTP_ERROR: 'Worker から {status} が返されました。',
     MISSING_URL: 'URL が指定されていません。',
-    UNSUPPORTED_PLATFORM: 'URL は Instagram でも Facebook でもありません。',
+    UNSUPPORTED_PLATFORM: 'URL は Instagram・Facebook・TikTok のいずれでもありません。',
     INVALID_URL: 'URL が無効です。',
     INVALID_PROTOCOL: 'https:// のみ受け付けます。',
     HOST_NOT_ALLOWED: 'ドメイン {host} はホワイトリストに含まれていません。',
@@ -104,5 +119,11 @@ export const ja: Translations = {
     FACEBOOK_NOT_FOUND: 'この Facebook 投稿は存在しないか、削除されています。',
     FACEBOOK_STORY_EXPIRED: 'この Facebook ストーリーは存在しないか、24 時間の期限が切れています。',
     FACEBOOK_FETCH_FAILED: 'Facebook から {status} が返されました。後ほど再試行してください。',
+    INVALID_TIKTOK_URL: 'TikTok の URL が無効です。対応:動画 (/@<user>/video/<id>)、写真 (/@<user>/photo/<id>)、短縮リンク (vm.tiktok.com、tiktok.com/t/)。',
+    TIKTOK_NO_MEDIA: 'メディアを取得できません。動画が非公開・地域制限、または TikTok のページ構造が変更された可能性があります。',
+    TIKTOK_RATE_LIMITED: 'TikTok が一時的にリクエストをブロックしています。30 秒ほど待って再度お試しください。',
+    TIKTOK_NOT_FOUND: 'この TikTok 動画は存在しないか、削除されています。',
+    TIKTOK_FETCH_FAILED: 'TikTok から {status} が返されました。後ほど再試行してください。',
+    TIKTOK_GEO_BLOCKED: 'TikTok がリクエストをブロックしました。動画が地域制限を受けているか、ログインが必要な可能性があります。',
   },
 };
