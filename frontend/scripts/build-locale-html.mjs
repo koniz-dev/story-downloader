@@ -92,6 +92,9 @@ function buildHead(locale, viteAssets) {
   // Defence-in-depth CSP. The worker URL is locked to a fixed origin; OG
   // images / favicons are same-origin. Tailwind requires 'unsafe-inline' for
   // style attributes generated at runtime — there is no equivalent for scripts.
+  // `frame-ancestors`, `sandbox`, and `report-uri` are intentionally omitted:
+  // CSP delivered via <meta> can't carry them (the browser warns and ignores).
+  // Setting them via response header isn't possible on GitHub Pages.
   const workerOrigin = 'https://story-dl-worker.koniz-dev.workers.dev';
   const csp = [
     "default-src 'self'",
@@ -100,7 +103,6 @@ function buildHead(locale, viteAssets) {
     "img-src 'self' https: data:",
     `media-src 'self' ${workerOrigin}`,
     `connect-src 'self' ${workerOrigin}`,
-    "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; ');
