@@ -1,20 +1,31 @@
 version: 2
 updates:
-  # Auto-PR new SHAs when GitHub Actions release new versions. Tag pinning
-  # was deemed insufficient (re-tagging is a known supply-chain attack), so
-  # the workflow files pin commit SHAs and rely on Dependabot to bump them.
+  # GitHub Actions: keep tracking ALL bumps including majors. Major bumps for
+  # popular actions (checkout, setup-node, deploy-pages) are usually safe
+  # runtime-only upgrades; we want to know about them quickly so the
+  # SHA-pinned references don't drift behind security fixes.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
 
+  # npm (frontend): group all minor/patch bumps into one weekly PR. Skip
+  # majors entirely — those need human migration planning (Tailwind 3→4,
+  # React 18→19, etc.) and shouldn't be auto-PR'd weekly.
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     versioning-strategy: increase
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/worker"
@@ -22,3 +33,10 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     versioning-strategy: increase
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
