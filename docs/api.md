@@ -3,12 +3,54 @@
 All endpoints are served by the Cloudflare Worker. The base URL is whatever you
 set as `VITE_WORKER_URL` (e.g. `https://story-dl-worker.<account>.workers.dev`).
 
+## Response headers (all endpoints)
+
+Every response carries:
+
+| Header                        | Value                  | Purpose                                       |
+| ----------------------------- | ---------------------- | --------------------------------------------- |
+| `X-Request-Id`                | UUID v4                | Correlation ID — include in bug reports.      |
+| `X-Content-Type-Options`      | `nosniff`              | Block MIME sniffing.                          |
+| `X-Frame-Options`             | `DENY`                 | API is not embeddable.                        |
+| `Referrer-Policy`             | `no-referrer`          | Don't leak Referer to upstream CDNs.          |
+| `Cross-Origin-Resource-Policy`| `cross-origin`         | Consumable from the frontend origin only.     |
+| `X-Robots-Tag`                | `noindex, nofollow`    | API responses are not indexed.                |
+
+Clients may pass an `X-Request-Id: <uuid>` header to thread their own
+correlation ID through the request; non-UUID values are dropped and a fresh
+UUID is generated.
+
 ## `GET /api/health`
 
 Liveness probe. Returns `200 OK`.
 
 ```json
-{ "ok": true }
+{
+  "ok": true,
+  "service": "story-dl-worker",
+  "version": "0.1.0",
+  "commit": "abc1234",
+  "builtAt": "2026-05-13T16:39:49.716Z",
+  "timestamp": "2026-05-13T16:40:10.000Z",
+  "uptimeSec": 21
+}
+```
+
+`commit` and `builtAt` are populated by the deploy workflow; locally they
+are `null`.
+
+## `GET /api/version`
+
+Lightweight identity probe — same identity fields as `/api/health` without
+runtime state.
+
+```json
+{
+  "service": "story-dl-worker",
+  "version": "0.1.0",
+  "commit": "abc1234",
+  "builtAt": "2026-05-13T16:39:49.716Z"
+}
 ```
 
 ## `POST /api/resolve`
@@ -79,6 +121,8 @@ restricting video access for the anonymous request).
 | Code                       | Meaning                                                              |
 | -------------------------- | -------------------------------------------------------------------- |
 | `MISSING_URL`              | The `url` field was missing from the request body.                   |
+| `BODY_TOO_LARGE`           | Request body exceeds 8 KB. HTTP 413.                                 |
+| `METHOD_NOT_ALLOWED`       | Wrong HTTP method for the endpoint. HTTP 405 with `Allow` header.    |
 | `INVALID_URL`              | The provided string is not a valid URL.                              |
 | `INVALID_PROTOCOL`         | Only `https://` URLs are accepted.                                   |
 | `UNSUPPORTED_PLATFORM`     | URL is not Instagram, Facebook, or TikTok.                           |

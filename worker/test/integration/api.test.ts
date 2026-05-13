@@ -21,10 +21,138 @@ function jsonRequest(path: string, body: unknown, ipOverride?: string): Request 
 }
 
 describe('GET /api/health', () => {
-  it('returns 200 with ok:true', async () => {
+  it('returns 200 with enriched payload', async () => {
     const res = await SELF.fetch(`${BASE}/api/health`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.ok).toBe(true);
+    expect(body.service).toBe('story-dl-worker');
+    expect(typeof body.version).toBe('string');
+    expect(typeof body.timestamp).toBe('string');
+    expect(typeof body.uptimeSec).toBe('number');
+  });
+});
+
+describe('GET /api/version', () => {
+  it('returns service identity', async () => {
+    const res = await SELF.fetch(`${BASE}/api/version`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.service).toBe('story-dl-worker');
+    expect(typeof body.version).toBe('string');
+    // commit/builtAt are populated at deploy time; locally they should be null.
+    expect('commit' in body).toBe(true);
+    expect('builtAt' in body).toBe(true);
+  });
+});
+
+describe('Security response headers', () => {
+  it('attaches X-Content-Type-Options + Referrer-Policy on JSON responses', async () => {
+    const res = await SELF.fetch(`${BASE}/api/health`);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(res.headers.get('Referrer-Policy')).toBe('no-referrer');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(res.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
+    expect(res.headers.get('X-Robots-Tag')).toContain('noindex');
+  });
+
+  it('attaches security headers on error responses too', async () => {
+    const res = await SELF.fetch(jsonRequest('/api/resolve', {}, '203.0.113.200'));
+    expect(res.status).toBe(400);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+  });
+
+  it('attaches security headers on CORS preflight responses', async () => {
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/resolve`, {
+        method: 'OPTIONS',
+        headers: { Origin: ALLOWED_ORIGIN, 'Access-Control-Request-Method': 'POST' },
+      }),
+    );
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+});
+
+describe('X-Request-Id correlation', () => {
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  it('generates a UUID when client does not send one', async () => {
+    const res = await SELF.fetch(`${BASE}/api/health`);
+    const id = res.headers.get('X-Request-Id');
+    expect(id).toBeTruthy();
+    expect(UUID_RE.test(id!)).toBe(true);
+  });
+
+  it('echoes back a well-formed client-supplied UUID', async () => {
+    const clientId = '11111111-2222-3333-4444-555555555555';
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/health`, { headers: { 'X-Request-Id': clientId } }),
+    );
+    expect(res.headers.get('X-Request-Id')).toBe(clientId);
+  });
+
+  it('rejects malformed client-supplied IDs and generates a fresh one', async () => {
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/health`, {
+        headers: { 'X-Request-Id': 'not-a-uuid; <script>alert(1)</script>' },
+      }),
+    );
+    const id = res.headers.get('X-Request-Id');
+    expect(id).toBeTruthy();
+    expect(UUID_RE.test(id!)).toBe(true);
+  });
+
+  it('includes requestId in JSON error envelope', async () => {
+    const res = await SELF.fetch(jsonRequest('/api/resolve', {}, '203.0.113.201'));
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(typeof body.requestId).toBe('string');
+    expect(body.requestId).toBe(res.headers.get('X-Request-Id'));
+  });
+});
+
+describe('Method handling', () => {
+  it('GET /api/resolve returns 405 with Allow header', async () => {
+    const res = await SELF.fetch(`${BASE}/api/resolve`);
+    expect(res.status).toBe(405);
+    expect(res.headers.get('Allow')).toContain('POST');
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.code).toBe('METHOD_NOT_ALLOWED');
+  });
+
+  it('POST /api/health returns 405 with Allow header', async () => {
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/health`, { method: 'POST' }),
+    );
+    expect(res.status).toBe(405);
+    expect(res.headers.get('Allow')).toContain('GET');
+  });
+
+  it('PUT /api/proxy returns 405', async () => {
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/proxy`, { method: 'PUT' }),
+    );
+    expect(res.status).toBe(405);
+    expect(res.headers.get('Allow')).toContain('GET');
+  });
+});
+
+describe('Body size guard', () => {
+  it('rejects oversized POST /api/resolve with 413 BODY_TOO_LARGE', async () => {
+    const oversized = 'x'.repeat(9 * 1024); // 9 KB > 8 KB limit
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/resolve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'cf-connecting-ip': '203.0.113.150',
+          'Content-Length': String(oversized.length),
+        },
+        body: JSON.stringify({ url: `https://www.instagram.com/reel/${oversized}/` }),
+      }),
+    );
+    expect(res.status).toBe(413);
+    expect(((await res.json()) as { code: string }).code).toBe('BODY_TOO_LARGE');
   });
 });
 
@@ -212,13 +340,6 @@ describe('Rate limiter', () => {
 describe('Unknown routes', () => {
   it('GET /unknown returns 404', async () => {
     const res = await SELF.fetch(`${BASE}/unknown`);
-    expect(res.status).toBe(404);
-  });
-
-  it('GET /api/health with PUT method returns 404', async () => {
-    const res = await SELF.fetch(
-      new Request(`${BASE}/api/health`, { method: 'PUT' }),
-    );
     expect(res.status).toBe(404);
   });
 });

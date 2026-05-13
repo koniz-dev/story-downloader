@@ -5,14 +5,42 @@ import { resolveTikTok } from './platforms/tiktok';
 import { proxyMedia } from './proxy';
 import { corsHeaders, handlePreflight } from './cors';
 import { checkRateLimit } from './rate-limit';
+import { applySecurityHeaders, getOrCreateRequestId, setRequestId } from './headers';
+import { SERVICE_NAME, SERVICE_VERSION, uptimeSeconds } from './version';
 import { ResolveError, type Env, type Platform } from './types';
+
+// Cap the /api/resolve body. A platform URL fits comfortably in 2 KB; 8 KB
+// gives slack for unusual short-link expansions while still rejecting
+// adversarial oversized POSTs before we try to JSON-parse them.
+const MAX_RESOLVE_BODY_BYTES = 8 * 1024;
 
 const router = Router();
 
-router.get('/api/health', () => json({ ok: true }));
+router.get('/api/health', (_request: Request, env: Env) =>
+  json({
+    ok: true,
+    service: SERVICE_NAME,
+    version: SERVICE_VERSION,
+    commit: env.BUILD_COMMIT ?? null,
+    builtAt: env.BUILD_AT ?? null,
+    timestamp: new Date().toISOString(),
+    uptimeSec: uptimeSeconds(),
+  }),
+);
 
-router.post('/api/resolve', async (request: Request) => {
+router.get('/api/version', (_request: Request, env: Env) =>
+  json({
+    service: SERVICE_NAME,
+    version: SERVICE_VERSION,
+    commit: env.BUILD_COMMIT ?? null,
+    builtAt: env.BUILD_AT ?? null,
+  }),
+);
+
+router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestContext) => {
   await checkRateLimit(request, '/api/resolve');
+  enforceBodySize(request);
+
   const started = Date.now();
   const body = (await request.json().catch(() => null)) as { url?: string } | null;
   if (!body?.url || typeof body.url !== 'string') {
@@ -31,16 +59,27 @@ router.post('/api/resolve', async (request: Request) => {
         : platform === 'facebook'
           ? await resolveFacebook(body.url)
           : await resolveTikTok(body.url);
-    logEvent('resolve.ok', { platform, kind: result.kind, items: result.mediaItems.length, ms: Date.now() - started });
+    logEvent('resolve.ok', {
+      requestId: ctx.requestId,
+      platform,
+      kind: result.kind,
+      items: result.mediaItems.length,
+      ms: Date.now() - started,
+    });
     return json(result);
   } catch (e) {
     const code = e instanceof ResolveError ? e.code : 'INTERNAL';
-    logEvent('resolve.fail', { platform, code, ms: Date.now() - started });
+    logEvent('resolve.fail', {
+      requestId: ctx.requestId,
+      platform,
+      code,
+      ms: Date.now() - started,
+    });
     throw e;
   }
 });
 
-router.get('/api/proxy', async (request: Request) => {
+router.get('/api/proxy', async (request: Request, _env: Env, ctx: RequestContext) => {
   await checkRateLimit(request, '/api/proxy');
   const url = new URL(request.url);
   const target = url.searchParams.get('url');
@@ -48,11 +87,50 @@ router.get('/api/proxy', async (request: Request) => {
   if (!target) {
     throw new ResolveError('Missing "url" query param', 'MISSING_URL');
   }
-  logEvent('proxy', { host: safeHost(target), hasFilename: !!filename });
+  logEvent('proxy', {
+    requestId: ctx.requestId,
+    host: safeHost(target),
+    hasFilename: !!filename,
+  });
   return await proxyMedia(target, filename);
 });
 
+// 405 fallbacks for known paths — without these, a GET /api/resolve falls
+// through to the catch-all 404 below, which is misleading. RFC 7231 requires
+// 405 with an Allow header listing supported methods.
+router.all('/api/resolve', () => methodNotAllowed('POST'));
+router.all('/api/proxy', () => methodNotAllowed('GET'));
+router.all('/api/health', () => methodNotAllowed('GET'));
+router.all('/api/version', () => methodNotAllowed('GET'));
+
 router.all('*', () => error(404, 'Not Found'));
+
+function methodNotAllowed(allow: string): Response {
+  return new Response(
+    JSON.stringify({ error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' }),
+    {
+      status: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        Allow: `${allow}, OPTIONS`,
+      },
+    },
+  );
+}
+
+function enforceBodySize(request: Request): void {
+  const lenHeader = request.headers.get('Content-Length');
+  if (!lenHeader) return; // Clients may omit; downstream JSON.parse caps the damage.
+  const len = Number.parseInt(lenHeader, 10);
+  if (Number.isFinite(len) && len > MAX_RESOLVE_BODY_BYTES) {
+    throw new ResolveError(
+      `Request body exceeds ${MAX_RESOLVE_BODY_BYTES} bytes`,
+      'BODY_TOO_LARGE',
+      413,
+      { limit: MAX_RESOLVE_BODY_BYTES, length: len },
+    );
+  }
+}
 
 function detectPlatform(rawUrl: string): Platform | null {
   try {
@@ -78,33 +156,59 @@ function logEvent(event: string, data: Record<string, unknown>): void {
   console.log(JSON.stringify({ event, ...data }));
 }
 
+interface RequestContext {
+  requestId: string;
+}
+
+function decorateResponse(response: Response, requestId: string, cors: HeadersInit): Response {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(cors as Record<string, string>)) headers.set(k, v);
+  applySecurityHeaders(headers);
+  setRequestId(headers, requestId);
+  return new Response(response.body, { status: response.status, headers });
+}
+
+function errorResponse(
+  e: unknown,
+  requestId: string,
+  cors: HeadersInit,
+): Response {
+  const isResolveErr = e instanceof ResolveError;
+  const status = isResolveErr ? e.status : 500;
+  const code = isResolveErr ? e.code : 'INTERNAL';
+  const message = isResolveErr ? e.message : e instanceof Error ? e.message : 'Internal error';
+  const params = isResolveErr ? e.params : undefined;
+  const body = JSON.stringify({ error: message, code, params, requestId });
+  const headers = new Headers({ 'Content-Type': 'application/json' });
+  for (const [k, v] of Object.entries(cors as Record<string, string>)) headers.set(k, v);
+  applySecurityHeaders(headers);
+  setRequestId(headers, requestId);
+  return new Response(body, { status, headers });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const preflight = handlePreflight(request, env);
-    if (preflight) return preflight;
+    const requestId = getOrCreateRequestId(request);
+    const cors = corsHeaders(request, env);
 
+    const preflight = handlePreflight(request, env);
+    if (preflight) {
+      return decorateResponse(preflight, requestId, cors);
+    }
+
+    const ctx: RequestContext = { requestId };
     try {
-      const response = await router.fetch(request, env);
-      const headers = new Headers(response.headers);
-      const cors = corsHeaders(request, env);
-      for (const [k, v] of Object.entries(cors)) headers.set(k, v as string);
-      return new Response(response.body, { status: response.status, headers });
+      const response = await router.fetch(request, env, ctx);
+      return decorateResponse(response, requestId, cors);
     } catch (e) {
-      const cors = corsHeaders(request, env);
-      if (e instanceof ResolveError) {
-        return new Response(
-          JSON.stringify({ error: e.message, code: e.code, params: e.params }),
-          {
-            status: e.status,
-            headers: { 'Content-Type': 'application/json', ...cors },
-          },
-        );
-      }
-      const message = e instanceof Error ? e.message : 'Internal error';
-      return new Response(JSON.stringify({ error: message, code: 'INTERNAL' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...cors },
+      logEvent('request.error', {
+        requestId,
+        url: request.url,
+        method: request.method,
+        code: e instanceof ResolveError ? e.code : 'INTERNAL',
+        message: e instanceof Error ? e.message : String(e),
       });
+      return errorResponse(e, requestId, cors);
     }
   },
 };
