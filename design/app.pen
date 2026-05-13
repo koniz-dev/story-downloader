@@ -1,0 +1,639 @@
+{
+  "version": "2.11",
+  "children": [
+    {
+      "type": "frame",
+      "id": "W8FtWH",
+      "x": -795,
+      "y": -206,
+      "name": "Desktop - Social Downloader",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "X0EMWs",
+          "name": "Header",
+          "width": "fill_container",
+          "fill": "transparent",
+          "padding": [
+            24,
+            336
+          ],
+          "justifyContent": "space_between",
+          "children": [
+            {
+              "type": "frame",
+              "id": "h2kdhI",
+              "name": "TitleGroup",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "YES98",
+                  "name": "logo",
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 90,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "$neon-1",
+                        "position": 0
+                      },
+                      {
+                        "color": "$neon-2",
+                        "position": 0.33
+                      },
+                      {
+                        "color": "$neon-3",
+                        "position": 0.66
+                      },
+                      {
+                        "color": "$neon-4",
+                        "position": 1
+                      }
+                    ]
+                  },
+                  "content": "Social Downloader",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "800"
+                },
+                {
+                  "type": "text",
+                  "id": "O4Fcu0",
+                  "name": "subtitle",
+                  "fill": "$text-muted",
+                  "content": "Download public videos from Instagram, Facebook and TikTok",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "M7g3K",
+              "name": "ActionsWrapper",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "VylVS",
+                  "name": "headerActions",
+                  "fill": "#00000000",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border-light"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yYKU2",
+                      "fill": "$text-primary",
+                      "content": "🇺🇸 English",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "YJDU1",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "chevron-down",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-muted"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AFvhG",
+                  "name": "themeToggle",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "#00000000",
+                  "cornerRadius": 18,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border-light"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "m2fC4i",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "moon",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-muted"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "l6jsb",
+          "name": "Main Area",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 40,
+          "padding": [
+            40,
+            336
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "n4EIL",
+              "name": "platformSelector",
+              "layout": "vertical",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "W0Q2q",
+                  "fill": "$text-primary",
+                  "content": "1. CHOOSE PLATFORM",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "mbbAE",
+                  "name": "platforms",
+                  "width": "fill_container",
+                  "fill": "#00000000",
+                  "cornerRadius": 16,
+                  "gap": 16,
+                  "padding": 16,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "W7zgH",
+                      "width": 220,
+                      "fill": "$card-bg",
+                      "cornerRadius": 16,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border-light"
+                      },
+                      "gap": 12,
+                      "padding": 20,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "UQClv",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#e1306c",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "MfC5j",
+                              "width": 24,
+                              "height": 24,
+                              "iconFontName": "instagram",
+                              "iconFontFamily": "lucide",
+                              "fill": "#ffffff"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "qiGwH",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "m7bEhA",
+                              "fill": "$text-primary",
+                              "content": "Instagram",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "EQxIy",
+                              "fill": "$text-muted",
+                              "content": "Reel, Post, IGTV",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HxFoz",
+                      "width": 220,
+                      "fill": "$card-bg",
+                      "cornerRadius": 16,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border-light"
+                      },
+                      "gap": 12,
+                      "padding": 20,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "cNIHc",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#1877f2",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "Auarl",
+                              "width": 24,
+                              "height": 24,
+                              "iconFontName": "facebook",
+                              "iconFontFamily": "lucide",
+                              "fill": "#ffffff"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "cevN2",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "yX2Uv",
+                              "fill": "$text-primary",
+                              "content": "Facebook",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "h6tsX",
+                              "fill": "$text-muted",
+                              "content": "Post, Video, Reel",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "D3gei",
+                      "width": 220,
+                      "fill": "$card-bg",
+                      "cornerRadius": 16,
+                      "stroke": {
+                        "thickness": 2,
+                        "fill": "$neon-1"
+                      },
+                      "gap": 12,
+                      "padding": 20,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "f2FikB",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#000000",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "dTv1C",
+                              "width": 24,
+                              "height": 24,
+                              "iconFontName": "video",
+                              "iconFontFamily": "lucide",
+                              "fill": "#ffffff"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "yXJnF",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "bWodb",
+                              "fill": "$text-primary",
+                              "content": "TikTok",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "k3rDD",
+                              "fill": "$text-muted",
+                              "content": "Video, Photo",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xAtqW",
+                          "layoutPosition": "absolute",
+                          "x": 195,
+                          "y": 5,
+                          "width": 20,
+                          "height": 20,
+                          "fill": "$neon-1",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "Mow5w",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "check",
+                              "iconFontFamily": "lucide",
+                              "fill": "#ffffff"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "m96vo",
+              "name": "inputSection",
+              "layout": "vertical",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "k36mHC",
+                  "fill": "$text-primary",
+                  "content": "2. PASTE LINK & DOWNLOAD",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "text",
+                  "id": "pL9xRs",
+                  "fill": "$text-muted",
+                  "content": "Paste TikTok URL",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "NVc88",
+                  "name": "inputContainer",
+                  "width": 600,
+                  "height": 56,
+                  "fill": "$card-bg",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border-light"
+                  },
+                  "gap": 12,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ar3JM",
+                      "fill": "$text-muted",
+                      "content": "https://www.tiktok.com/@user/video...",
+                      "fontFamily": "Inter",
+                      "fontSize": 16
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xUqEe",
+                      "name": "goBtn",
+                      "width": 120,
+                      "height": 40,
+                      "fill": "$download-purple",
+                      "cornerRadius": 8,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "dle6u",
+                          "fill": "#ffffff",
+                          "content": "Download",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vfU74",
+              "name": "instructions",
+              "layout": "vertical",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dPPyf",
+                  "fill": "$text-primary",
+                  "content": "3. HOW TO GET THE LINK",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "P9GLUl",
+                  "name": "instructionsCard",
+                  "width": 800,
+                  "fill": "$card-bg",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Y49Ai",
+                      "fill": "$text-primary",
+                      "content": "How to get the link",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "yGI5N",
+                      "fill": "$text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Supports public TikTok videos and photo slideshows. The downloader video keeps TikTok watermark.\n\n• Open the TikTok app or website and go to the video you want.\n• Tap \"Share\" (the arrow icon) → \"Copy link\".\n• Or on desktop, copy the URL from the address bar.\n• Paste the link in the box below.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14
+                    },
+                    {
+                      "type": "frame",
+                      "id": "dCNpC",
+                      "name": "warningBox",
+                      "width": "fill_container",
+                      "fill": "#fef3cd",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SnuI7",
+                          "fill": "#92400e",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "⚠️ Downloaded videos always include the TikTok watermark — even without explicit logos.\n⚠️ TikTok occasionally may block this client. If you see a \"try again\" error, wait ~30 seconds.\n⚠️ Only supports public videos. Private or age-restricted videos cannot be downloaded.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Inter",
+                          "fontSize": 12
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "bg-base": {
+      "type": "color",
+      "value": "#f8f7ff"
+    },
+    "bg-gradient": {
+      "type": "color",
+      "value": "#e8e5ff"
+    },
+    "text-primary": {
+      "type": "color",
+      "value": "#1a1a1a"
+    },
+    "text-muted": {
+      "type": "color",
+      "value": "#6b7280"
+    },
+    "instagram-red": {
+      "type": "color",
+      "value": "#e1306c"
+    },
+    "facebook-blue": {
+      "type": "color",
+      "value": "#1877f2"
+    },
+    "tiktok-black": {
+      "type": "color",
+      "value": "#000000"
+    },
+    "download-purple": {
+      "type": "color",
+      "value": "#8b5cf6"
+    },
+    "card-bg": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "border-light": {
+      "type": "color",
+      "value": "#e5e7eb"
+    },
+    "neon-1": {
+      "type": "color",
+      "value": "#6366f1"
+    },
+    "neon-2": {
+      "type": "color",
+      "value": "#a855f7"
+    },
+    "neon-3": {
+      "type": "color",
+      "value": "#ec4899"
+    },
+    "neon-4": {
+      "type": "color",
+      "value": "#38bdf8"
+    }
+  }
+}
