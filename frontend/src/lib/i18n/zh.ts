@@ -101,6 +101,12 @@ export const zh: Translations = {
   alert: {
     close: '关闭',
     code: '错误码',
+    requestId: '请求 ID',
+  },
+  errorBoundary: {
+    title: '出错了',
+    body: '应用遇到了意外错误。请刷新页面重试 — 您的输入不会被保存。',
+    reload: '刷新页面',
   },
   serverError: {
     NO_WORKER_URL: '未配置 VITE_WORKER_URL。请创建 frontend/.env.local 并设置 VITE_WORKER_URL=https://...',

@@ -101,6 +101,12 @@ export const ko: Translations = {
   alert: {
     close: '닫기',
     code: '코드',
+    requestId: '요청 ID',
+  },
+  errorBoundary: {
+    title: '문제가 발생했습니다',
+    body: '앱에서 예기치 않은 오류가 발생했습니다. 페이지를 새로 고쳐 다시 시도하세요 — 입력 내용은 저장되지 않습니다.',
+    reload: '페이지 새로 고침',
   },
   serverError: {
     NO_WORKER_URL: 'VITE_WORKER_URL이 설정되지 않았습니다. frontend/.env.local 파일을 만들고 VITE_WORKER_URL=https://...을 추가하세요.',

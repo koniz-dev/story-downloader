@@ -101,6 +101,12 @@ export const ja: Translations = {
   alert: {
     close: '閉じる',
     code: 'コード',
+    requestId: 'リクエスト ID',
+  },
+  errorBoundary: {
+    title: '問題が発生しました',
+    body: 'アプリで予期しないエラーが発生しました。ページを再読み込みしてください — 入力内容は保存されません。',
+    reload: 'ページを再読み込み',
   },
   serverError: {
     NO_WORKER_URL: 'VITE_WORKER_URL が未設定です。frontend/.env.local を作成し、VITE_WORKER_URL=https://... を設定してください。',

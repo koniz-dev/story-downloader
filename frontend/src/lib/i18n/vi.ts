@@ -101,6 +101,12 @@ export const vi: Translations = {
   alert: {
     close: 'Đóng',
     code: 'code',
+    requestId: 'mã yêu cầu',
+  },
+  errorBoundary: {
+    title: 'Đã xảy ra lỗi',
+    body: 'Ứng dụng gặp lỗi không mong muốn. Hãy tải lại trang để thử lại — dữ liệu nhập vào sẽ không được giữ.',
+    reload: 'Tải lại trang',
   },
   serverError: {
     NO_WORKER_URL: 'Chưa cấu hình VITE_WORKER_URL. Tạo file frontend/.env.local với VITE_WORKER_URL=https://...',

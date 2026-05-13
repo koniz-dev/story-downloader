@@ -7,6 +7,9 @@ export class ApiError extends Error {
     message: string,
     public code?: string,
     public params?: Record<string, string | number>,
+    // Per-request correlation ID surfaced from the worker. Displayed in the
+    // UI so users can reference a specific failure in bug reports.
+    public requestId?: string,
   ) {
     super(message);
   }
@@ -40,11 +43,16 @@ export async function resolveMedia(url: string, signal?: AbortSignal): Promise<R
       error?: string;
       code?: string;
       params?: Record<string, string | number>;
+      requestId?: string;
     };
+    // Prefer the body's requestId (the worker generates it before throwing);
+    // fall back to the response header in case the body parse failed.
+    const requestId = body.requestId ?? res.headers.get('X-Request-Id') ?? undefined;
     throw new ApiError(
       body.error ?? `Worker returned ${res.status}`,
       body.code ?? 'WORKER_HTTP_ERROR',
       body.params ?? (body.code ? undefined : { status: res.status }),
+      requestId,
     );
   }
 

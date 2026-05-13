@@ -22,7 +22,7 @@ export function App() {
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResolveResponse | null>(null);
-  const [error, setError] = useState<{ message: string; code?: string } | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string; requestId?: string } | null>(null);
 
   useEffect(() => {
     if (platform) localStorage.setItem(STORAGE_KEY, platform);
@@ -52,11 +52,12 @@ export function App() {
     } catch (e) {
       const code = e instanceof ApiError ? e.code : undefined;
       const params = e instanceof ApiError ? e.params : undefined;
+      const requestId = e instanceof ApiError ? e.requestId : undefined;
       const template = code && Object.prototype.hasOwnProperty.call(t.serverError, code)
         ? t.serverError[code as keyof typeof t.serverError]
         : null;
       const msg = template ? format(template, params ?? {}) : t.form.error.generic;
-      setError({ message: msg, code });
+      setError({ message: msg, code, requestId });
       track({ event: 'resolve.fail', platform, code, ms: Date.now() - started });
     } finally {
       setLoading(false);
@@ -108,7 +109,14 @@ export function App() {
           </>
         )}
 
-        {error && <ErrorAlert message={error.message} code={error.code} onDismiss={() => setError(null)} />}
+        {error && (
+          <ErrorAlert
+            message={error.message}
+            code={error.code}
+            requestId={error.requestId}
+            onDismiss={() => setError(null)}
+          />
+        )}
 
         {result && result.mediaItems.length > 0 && (
           <section className="space-y-3">

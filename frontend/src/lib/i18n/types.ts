@@ -76,6 +76,12 @@ export interface Translations {
   alert: {
     close: string;
     code: string;
+    requestId: string;
+  };
+  errorBoundary: {
+    title: string;
+    body: string;
+    reload: string;
   };
   serverError: {
     NO_WORKER_URL: string;

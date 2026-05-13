@@ -101,6 +101,12 @@ export const en: Translations = {
   alert: {
     close: 'Close',
     code: 'code',
+    requestId: 'request id',
+  },
+  errorBoundary: {
+    title: 'Something went wrong',
+    body: 'The app hit an unexpected error. Reload to try again — your input is not saved.',
+    reload: 'Reload page',
   },
   serverError: {
     NO_WORKER_URL: 'VITE_WORKER_URL is not configured. Create frontend/.env.local with VITE_WORKER_URL=https://...',
