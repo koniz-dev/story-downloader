@@ -25,7 +25,9 @@
 
     --danger: 220 38 38;
     --danger-soft: 254 226 226;
-    --warning: 161 98 7;
+    /* amber-800 — amber-700 (#a16207) on bg-warning/10 hits 4.26:1, below
+       WCAG AA 4.5. Darkening one step crosses the threshold. */
+    --warning: 146 64 14;
     --warning-soft: 254 243 199;
     --success: 5 150 105;
     --success-soft: 209 250 229;
