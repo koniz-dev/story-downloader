@@ -18,6 +18,13 @@ export const SEO = {
       'Save public Instagram Reels, Posts, IGTV, Facebook videos and TikTok videos in one click. No signup.',
     ogTitle: 'Instagram, Facebook & TikTok Downloader',
     ogSubtitle: 'Free · No signup · No software',
+    heroH1: 'Instagram, Facebook & TikTok Video Downloader',
+    heroIntro:
+      'Paste a public Instagram, Facebook or TikTok link and save the video straight to your device. No signup, no software, free forever.',
+    loadingLabel: 'Loading…',
+    notFoundTitle: 'Page not found',
+    notFoundBody: "The page you’re looking for doesn’t exist or has moved.",
+    notFoundCta: 'Go to homepage',
   },
   vi: {
     htmlLang: 'vi',
@@ -32,6 +39,13 @@ export const SEO = {
       'Tải Reel, Post, Video công khai từ Instagram, Facebook và TikTok trong một cú click. Không cần đăng ký.',
     ogTitle: 'Tải Instagram, Facebook & TikTok',
     ogSubtitle: 'Miễn phí · Không đăng ký · Không cài app',
+    heroH1: 'Tải video Instagram, Facebook & TikTok',
+    heroIntro:
+      'Dán link công khai từ Instagram, Facebook hoặc TikTok và lưu video về thiết bị ngay. Không đăng ký, không cài phần mềm, miễn phí mãi mãi.',
+    loadingLabel: 'Đang tải…',
+    notFoundTitle: 'Không tìm thấy trang',
+    notFoundBody: 'Trang bạn đang tìm không tồn tại hoặc đã được di chuyển.',
+    notFoundCta: 'Về trang chủ',
   },
   ja: {
     htmlLang: 'ja',
@@ -46,6 +60,13 @@ export const SEO = {
       'Instagram・Facebook・TikTok の公開動画をワンクリックで保存。登録不要・インストール不要。',
     ogTitle: 'Instagram・Facebook・TikTok ダウンローダー',
     ogSubtitle: '無料 · 登録不要 · インストール不要',
+    heroH1: 'Instagram・Facebook・TikTok 動画ダウンローダー',
+    heroIntro:
+      'Instagram・Facebook・TikTok の公開リンクを貼り付けるだけで、動画をそのまま端末に保存できます。登録不要、インストール不要、ずっと無料。',
+    loadingLabel: '読み込み中…',
+    notFoundTitle: 'ページが見つかりません',
+    notFoundBody: 'お探しのページは存在しないか、移動されました。',
+    notFoundCta: 'ホームへ戻る',
   },
   ko: {
     htmlLang: 'ko',
@@ -60,6 +81,13 @@ export const SEO = {
       'Instagram, Facebook과 TikTok의 공개 영상을 클릭 한 번으로 저장. 가입 불필요.',
     ogTitle: 'Instagram·Facebook·TikTok 다운로더',
     ogSubtitle: '무료 · 가입 불필요 · 설치 불필요',
+    heroH1: 'Instagram, Facebook & TikTok 동영상 다운로더',
+    heroIntro:
+      'Instagram, Facebook 또는 TikTok 공개 링크를 붙여넣고 동영상을 바로 기기에 저장하세요. 가입 불필요, 설치 없음, 영원히 무료.',
+    loadingLabel: '불러오는 중…',
+    notFoundTitle: '페이지를 찾을 수 없습니다',
+    notFoundBody: '찾으시는 페이지가 존재하지 않거나 이동되었습니다.',
+    notFoundCta: '홈으로 가기',
   },
   zh: {
     htmlLang: 'zh',
@@ -74,6 +102,13 @@ export const SEO = {
       '免费在线下载 Instagram、Facebook 和 TikTok 公开视频，一键保存。无需注册。',
     ogTitle: 'Instagram、Facebook & TikTok 下载器',
     ogSubtitle: '免费 · 无需注册 · 无需安装',
+    heroH1: 'Instagram、Facebook 和 TikTok 视频下载器',
+    heroIntro:
+      '粘贴 Instagram、Facebook 或 TikTok 公开链接，即可将视频直接保存到设备。无需注册，无需安装，永久免费。',
+    loadingLabel: '加载中…',
+    notFoundTitle: '页面未找到',
+    notFoundBody: '您要找的页面不存在或已被移动。',
+    notFoundCta: '回到首页',
   },
 };
 

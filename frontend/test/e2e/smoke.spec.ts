@@ -27,3 +27,23 @@ test('CSP meta tag is present', async ({ page }) => {
   // frame-ancestors is intentionally NOT in the meta CSP (browsers ignore it).
   expect(csp).not.toContain('frame-ancestors');
 });
+
+test('pre-rendered HTML carries a visible h1 + intro before React boots', async ({ page }) => {
+  // Disable JS so React never mounts — we should still see the SEO body.
+  await page.context().route('**/*.js', (route) => route.abort());
+  await page.goto('/');
+  // The prerender skeleton sets a heroH1 from seo-data.mjs.
+  await expect(page.locator('h1')).toContainText(/Instagram, Facebook (&|and) TikTok/i);
+  // Intro paragraph value-prop wording.
+  await expect(page.getByText(/no signup/i).first()).toBeVisible();
+});
+
+test('404 page shows localized not-found content', async ({ page }) => {
+  // GitHub Pages serves /<base>/404.html for any unmatched path; vite preview
+  // only exposes static files under the configured `base`, so hit the file
+  // via the base path (matches what users see on the deployed site).
+  await page.goto('/story-downloader/404.html');
+  await expect(page.locator('main#not-found')).toBeVisible();
+  await expect(page.locator('[data-locale="en"]:not([hidden])')).toContainText('Page not found');
+  await expect(page.getByRole('link', { name: /Go to homepage/i })).toBeVisible();
+});

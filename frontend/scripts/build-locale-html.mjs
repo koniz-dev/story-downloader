@@ -5,7 +5,7 @@
 // The source frontend/index.html intentionally has a near-empty <head>; we
 // rebuild the head here from scratch and reattach Vite's emitted asset tags.
 
-import { mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SEO, LOCALES, DEFAULT_LOCALE, SITE_URL, urlForLocale } from './seo-data.mjs';
@@ -156,13 +156,147 @@ ${buildJsonLd(locale, copy)}
   </head>`;
 }
 
+// Visible content rendered into <div id="root"> so crawlers and screen readers
+// see a hero h1 + intro before React hydrates. ReactDOM.createRoot replaces
+// the children on mount, so the skeleton vanishes once the app boots; the
+// noscript fallback keeps the page meaningful for users with JS disabled.
+function buildBodySkeleton(locale) {
+  const copy = SEO[locale];
+  return `<div id="root">
+      <div data-prerender="skeleton" style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;">
+        <h1 style="font-size:1.875rem;font-weight:700;margin:0 0 12px;">${escHtml(copy.heroH1)}</h1>
+        <p style="max-width:42rem;font-size:1rem;line-height:1.55;color:#475569;margin:0 0 16px;">${escHtml(copy.heroIntro)}</p>
+        <p style="font-size:0.875rem;color:#94a3b8;margin:0;">${escHtml(copy.loadingLabel)}</p>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding:24px;text-align:center;font-family:system-ui,sans-serif;">
+        <h1>${escHtml(copy.heroH1)}</h1>
+        <p>${escHtml(copy.heroIntro)}</p>
+        <p><strong>JavaScript is required to use this app.</strong></p>
+      </div>
+    </noscript>`;
+}
+
 function rewrite(html, locale) {
   const headMatch = html.match(/<head>[\s\S]*?<\/head>/);
   if (!headMatch) throw new Error('Could not find <head> in dist/index.html');
   const viteAssets = extractViteAssets(headMatch[0]);
   return html
     .replace(/<html\b[^>]*>/, `<html lang="${escAttr(SEO[locale].htmlLang)}">`)
-    .replace(/<head>[\s\S]*?<\/head>/, buildHead(locale, viteAssets));
+    .replace(/<head>[\s\S]*?<\/head>/, buildHead(locale, viteAssets))
+    .replace(/<div id="root"><\/div>/, buildBodySkeleton(locale));
+}
+
+// GitHub Pages serves /404.html with HTTP 404 status for any unmatched path.
+// Build a small standalone page (no React, no Vite bundle) that shows the
+// localized "not found" message. Locale is detected client-side from the URL
+// prefix, falling back to en. Each locale's text is embedded so the page is
+// useful even without JS.
+function build404() {
+  const blocks = LOCALES.map((locale) => {
+    const copy = SEO[locale];
+    const home = locale === DEFAULT_LOCALE ? './' : `./${locale}/`;
+    return `      <div data-locale="${escAttr(locale)}" lang="${escAttr(copy.htmlLang)}" hidden>
+        <p class="badge">404</p>
+        <h1>${escHtml(copy.notFoundTitle)}</h1>
+        <p class="body">${escHtml(copy.notFoundBody)}</p>
+        <a class="cta" href="${escAttr(home)}">${escHtml(copy.notFoundCta)}</a>
+      </div>`;
+  }).join('\n');
+
+  const localesJson = JSON.stringify(LOCALES);
+  const defaultJson = JSON.stringify(DEFAULT_LOCALE);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>404 — Page not found</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #fafafc;
+        color: #0f172a;
+        padding: 24px;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #020617; color: #f8fafc; }
+        .body { color: #94a3b8; }
+        .cta { background: #f8fafc; color: #020617; }
+      }
+      main { max-width: 36rem; text-align: center; }
+      .badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #64748b;
+        margin: 0 0 1rem;
+      }
+      h1 { font-size: 1.875rem; margin: 0 0 0.75rem; }
+      .body { font-size: 1rem; line-height: 1.55; color: #475569; margin: 0 0 1.5rem; }
+      .cta {
+        display: inline-block;
+        padding: 0.625rem 1.25rem;
+        background: #0f172a;
+        color: #f8fafc;
+        text-decoration: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+      }
+      .cta:hover, .cta:focus { opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <main id="not-found">
+${blocks}
+    </main>
+    <script>
+      (function () {
+        var LOCALES = ${localesJson};
+        var DEFAULT = ${defaultJson};
+        // Detect locale from the URL prefix the user landed on. GitHub Pages
+        // rewrites all 404s to /404.html but keeps the original location, so
+        // history.state and document.location are not authoritative — read
+        // the original path from document.referrer if same-origin, else from
+        // the location pathname.
+        function detect() {
+          var path = window.location.pathname || '/';
+          var match = path.match(/\\/([a-z]{2})\\/?(?:$|[^a-z])/);
+          if (match && LOCALES.indexOf(match[1]) !== -1) return match[1];
+          var nav = (navigator.language || '').slice(0, 2).toLowerCase();
+          if (LOCALES.indexOf(nav) !== -1) return nav;
+          return DEFAULT;
+        }
+        var locale = detect();
+        document.documentElement.lang = locale;
+        var blocks = document.querySelectorAll('[data-locale]');
+        for (var i = 0; i < blocks.length; i++) {
+          var el = blocks[i];
+          if (el.getAttribute('data-locale') === locale) el.hidden = false;
+        }
+        // Defensive: if detection somehow fails, show the default locale.
+        var visible = document.querySelector('[data-locale]:not([hidden])');
+        if (!visible) {
+          var fallback = document.querySelector('[data-locale="' + DEFAULT + '"]');
+          if (fallback) fallback.hidden = false;
+        }
+      })();
+    </script>
+  </body>
+</html>
+`;
 }
 
 function buildSitemap() {
@@ -215,18 +349,26 @@ function main() {
     }
   }
 
-  // GitHub Pages serves 404.html for unknown paths. Use the English page so
-  // mistyped URLs still render the SPA shell.
-  copyFileSync(sourcePath, join(DIST, '404.html'));
+  writeFileSync(join(DIST, '404.html'), build404());
   console.log('  ✔ 404.html');
 
   writeFileSync(join(DIST, 'sitemap.xml'), buildSitemap());
   console.log('  ✔ sitemap.xml');
 }
 
-try {
-  main();
-} catch (err) {
-  console.error('Locale HTML generation failed:', err);
-  process.exit(1);
+// Pure builders are exported for unit testing. main() only runs when this
+// file is invoked directly (npm run build), not when imported by tests.
+export { buildBodySkeleton, buildHead, build404, buildSitemap, rewrite };
+
+const invokedAsScript =
+  import.meta.url === `file://${process.argv[1]}` ||
+  import.meta.url.endsWith('/build-locale-html.mjs') && process.argv[1]?.endsWith('build-locale-html.mjs');
+
+if (invokedAsScript) {
+  try {
+    main();
+  } catch (err) {
+    console.error('Locale HTML generation failed:', err);
+    process.exit(1);
+  }
 }
