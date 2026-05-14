@@ -190,12 +190,20 @@ function escapeRe(s: string): string {
 }
 
 function decodeHtml(s: string): string {
-  return s
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+  // Single-pass: sequential .replace() chains double-unescape — e.g. an
+  // input of `&amp;quot;` (literal `&quot;`) would become `"` instead of
+  // the intended `&quot;`. One regex prevents the second pass from
+  // ever seeing the output of the first.
+  return s.replace(/&(amp|quot|#39|lt|gt);/g, (m, e) => {
+    switch (e) {
+      case 'amp': return '&';
+      case 'quot': return '"';
+      case '#39': return "'";
+      case 'lt': return '<';
+      case 'gt': return '>';
+      default: return m;
+    }
+  });
 }
 
 function unescapeJson(s: string): string {
