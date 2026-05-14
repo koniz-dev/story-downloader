@@ -163,5 +163,6 @@ export const vi: Translations = {
     TIKTOK_NOT_FOUND: 'Video TikTok không tồn tại hoặc đã bị xoá.',
     TIKTOK_FETCH_FAILED: 'TikTok trả về {status}. Vui lòng thử lại sau.',
     TIKTOK_GEO_BLOCKED: 'TikTok chặn request. Video có thể bị giới hạn khu vực hoặc cần đăng nhập.',
+    TIKTOK_BLOCKED: 'TikTok đang tạm thời chặn dịch vụ tải (không phải video của bạn). Hãy thử lại sau vài phút, hoặc thử URL TikTok khác.',
   },
 };

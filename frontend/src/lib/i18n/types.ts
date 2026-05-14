@@ -138,6 +138,7 @@ export interface Translations {
     TIKTOK_NOT_FOUND: string;
     TIKTOK_FETCH_FAILED: string;
     TIKTOK_GEO_BLOCKED: string;
+    TIKTOK_BLOCKED: string;
   };
 }
 

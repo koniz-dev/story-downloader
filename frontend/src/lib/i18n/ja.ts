@@ -163,5 +163,6 @@ export const ja: Translations = {
     TIKTOK_NOT_FOUND: 'この TikTok 動画は存在しないか、削除されています。',
     TIKTOK_FETCH_FAILED: 'TikTok から {status} が返されました。後ほど再試行してください。',
     TIKTOK_GEO_BLOCKED: 'TikTok がリクエストをブロックしました。動画が地域制限を受けているか、ログインが必要な可能性があります。',
+    TIKTOK_BLOCKED: 'TikTok が現在ダウンローダー(あなたの動画ではありません)へのアクセスを一時的にブロックしています。数分後にもう一度お試しいただくか、別の TikTok URL をお試しください。',
   },
 };

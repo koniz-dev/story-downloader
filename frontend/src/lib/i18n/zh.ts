@@ -163,5 +163,6 @@ export const zh: Translations = {
     TIKTOK_NOT_FOUND: '此 TikTok 视频不存在或已被删除。',
     TIKTOK_FETCH_FAILED: 'TikTok 返回 {status}。请稍后重试。',
     TIKTOK_GEO_BLOCKED: 'TikTok 拦截了请求。视频可能受地区限制或需要登录。',
+    TIKTOK_BLOCKED: 'TikTok 当前正在暂时拦截下载工具(不是您的视频)。请几分钟后重试,或尝试其他 TikTok URL。',
   },
 };

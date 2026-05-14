@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractPlayAddr, parseTikTokItemStruct } from '../../src/platforms/tiktok';
+import { extractPlayAddr, isWafChallenge, parseTikTokItemStruct } from '../../src/platforms/tiktok';
 
 const SAMPLE_PLAY_ADDR = 'https://v16-webapp-prime.tiktok.com/video/tos/abc/?signature=xxx';
 const SAMPLE_DOWNLOAD_ADDR = 'https://v16-webapp-prime.tiktok.com/video/tos/abc/?download=1';
@@ -67,5 +67,34 @@ describe('extractPlayAddr', () => {
     expect(extractPlayAddr({ video: { playAddr: '', downloadAddr: SAMPLE_DOWNLOAD_ADDR } })).toBe(
       SAMPLE_DOWNLOAD_ADDR,
     );
+  });
+});
+
+describe('isWafChallenge', () => {
+  // Captured from a real Slardar WAF "Please wait..." response. Tiny page
+  // with no media; previously fell through to TIKTOK_NO_MEDIA which blamed
+  // the user's URL. Detection now emits TIKTOK_BLOCKED.
+  const WAF_HTML = `<!doctype html> <html lang="en">   <head>     <script id="slardar-config" type="application/json">       {         "bid": "slardar_us_waf"       }     </script>   </head>   <body>     Please wait...     <p id="wci" class="_wafchallengeid"></p>     <p id="rci" class="waforiginalreid"></p>     <script src="https://example/obj/waf-aiso/dd9807.js"></script>   </body> </html>`;
+
+  it('identifies a real Slardar WAF challenge page', () => {
+    expect(isWafChallenge(WAF_HTML)).toBe(true);
+  });
+
+  it('rejects a normal video page (too large)', () => {
+    // A real TikTok video page is > 100 KB. Even if it incidentally contained
+    // one WAF marker in logging code, the length cap keeps us safe.
+    const html = 'x'.repeat(20_000) + '_wafchallengeid';
+    expect(isWafChallenge(html)).toBe(false);
+  });
+
+  it('requires at least two markers to classify', () => {
+    expect(isWafChallenge('<html>just _wafchallengeid alone</html>')).toBe(false);
+    expect(
+      isWafChallenge('<html>_wafchallengeid and waforiginalreid both present</html>'),
+    ).toBe(true);
+  });
+
+  it('returns false for an empty body', () => {
+    expect(isWafChallenge('')).toBe(false);
   });
 });

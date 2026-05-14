@@ -1,11 +1,27 @@
 import { ResolveError, type ResolveResult, type MediaItem, type ContentKind } from '../types';
 import { FETCH_TIMEOUT_MS, MAX_HTML_BYTES, readBoundedText } from '../util/fetch';
 
+// Chrome 124 (the previous value) is from April 2024. By 2026 TikTok's WAF
+// flags stale UA strings as bots. The full sec-ch-ua-* + sec-fetch-* set
+// makes the request look like a real top-level navigation from Chrome on
+// Windows. NOTE: this alone won't bypass an IP-level block on Cloudflare
+// Workers egress — that's why we also detect the WAF challenge HTML and
+// surface a clearer error message (see isWafChallenge).
 const HEADERS_BROWSER: HeadersInit = {
   'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+  Accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'sec-ch-ua': '"Chromium";v="135", "Not(A:Brand";v="24", "Google Chrome";v="135"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
 };
 
 export const TIKTOK_BROWSER_UA = HEADERS_BROWSER['User-Agent' as keyof HeadersInit] as string;
@@ -80,7 +96,37 @@ export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult
       429,
     );
   }
-  return { html: await readBoundedText(res, MAX_HTML_BYTES), finalUrl: res.url, cookies };
+  const html = await readBoundedText(res, MAX_HTML_BYTES);
+  // Hard-block: TikTok's Slardar WAF returns a tiny "Please wait…" challenge
+  // page (no __UNIVERSAL_DATA_FOR_REHYDRATION__, no og:image). The parser
+  // would otherwise emit TIKTOK_NO_MEDIA, which blames the user's URL.
+  // Detect the challenge markers and surface a clearer error code so the
+  // localised message can correctly say "the downloader is being blocked,
+  // not your video."
+  if (isWafChallenge(html)) {
+    throw new ResolveError(
+      'TikTok is temporarily blocking this downloader (Slardar WAF challenge). Try again later.',
+      'TIKTOK_BLOCKED',
+      502,
+    );
+  }
+  return { html, finalUrl: res.url, cookies };
+}
+
+// The Slardar WAF challenge page is recognisable by any of these markers.
+// We require two hits before classifying (paranoia: TikTok could in theory
+// embed `slardar_us_waf` in legitimate logging on a normal page).
+export function isWafChallenge(html: string): boolean {
+  if (html.length > 8 * 1024) return false; // real video pages are >> 100 KB
+  const markers = [
+    'slardar_us_waf',
+    '_wafchallengeid',
+    'waforiginalreid',
+    'obj/waf-aiso/',
+  ];
+  let hits = 0;
+  for (const m of markers) if (html.includes(m)) hits++;
+  return hits >= 2;
 }
 
 function collectCookies(headers: Headers): string {

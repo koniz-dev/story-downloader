@@ -163,5 +163,6 @@ export const ko: Translations = {
     TIKTOK_NOT_FOUND: '이 TikTok 동영상이 존재하지 않거나 삭제되었습니다.',
     TIKTOK_FETCH_FAILED: 'TikTok이 {status}을(를) 반환했습니다. 잠시 후 다시 시도해 주세요.',
     TIKTOK_GEO_BLOCKED: 'TikTok이 요청을 차단했습니다. 동영상이 지역 제한되었거나 로그인이 필요할 수 있습니다.',
+    TIKTOK_BLOCKED: 'TikTok이 현재 다운로더(귀하의 동영상이 아님) 접근을 일시적으로 차단하고 있습니다. 잠시 후 다시 시도하거나 다른 TikTok URL을 시도해 주세요.',
   },
 };

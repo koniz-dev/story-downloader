@@ -163,5 +163,6 @@ export const en: Translations = {
     TIKTOK_NOT_FOUND: 'This TikTok video does not exist or has been deleted.',
     TIKTOK_FETCH_FAILED: 'TikTok returned {status}. Please try again later.',
     TIKTOK_GEO_BLOCKED: 'TikTok blocked the request. The video may be geo-restricted or require login.',
+    TIKTOK_BLOCKED: 'TikTok is temporarily blocking the downloader (not your video). Try again in a few minutes, or try a different TikTok URL.',
   },
 };
