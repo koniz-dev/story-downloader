@@ -36,11 +36,11 @@ jobs:
 
       # NOTE: tag-pinned for initial commit. Dependabot will SHA-pin on its
       # next github-actions run to match the existing pin style.
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
 
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
