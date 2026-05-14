@@ -75,14 +75,19 @@ jobs:
             exit 0
           fi
 
+          # Built via printf so each line stays inside the YAML literal-block
+          # indent — multi-line "..." strings here would exit the block and
+          # break the YAML parse.
+          body=$(printf '%s\n' \
+            "Probe of \`/api/health\` failed in run: ${RUN_URL}" \
+            "" \
+            "Manual triage:" \
+            "1. Check Cloudflare Workers dashboard for error spike." \
+            "2. \`npx wrangler tail\` to stream live logs." \
+            "3. If wedge is in code: \`npx wrangler rollback\` (see docs/deployment.md §8)." \
+            "" \
+            "Close this issue once the probe is green again.")
           gh issue create \
             --title "Synthetic probe failed (status=${STATUS:-?})" \
             --label "synthetic-probe-failure" \
-            --body "Probe of \`/api/health\` failed in run: ${RUN_URL}
-
-Manual triage:
-1. Check Cloudflare Workers dashboard for error spike.
-2. \`npx wrangler tail\` to stream live logs.
-3. If wedge is in code: \`npx wrangler rollback\` (see docs/deployment.md §8).
-
-Close this issue once the probe is green again."
+            --body "$body"
