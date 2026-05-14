@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PlatformSelector } from './components/PlatformSelector';
 import { CollapsibleGuide } from './components/CollapsibleGuide';
 import { UrlForm } from './components/UrlForm';
@@ -14,6 +14,8 @@ import { track } from './lib/track';
 import { format, useI18n } from './lib/i18n';
 import { useToast } from './lib/toast';
 import { downloadMedia } from './lib/download';
+import { scrollIntoView } from './lib/scroll';
+import { useScrolled } from './lib/useScrolled';
 import type { Platform, ResolveResponse } from './types';
 
 const STORAGE_KEY = 'sd.platform';
@@ -21,6 +23,9 @@ const STORAGE_KEY = 'sd.platform';
 export function App() {
   const { t } = useI18n();
   const toast = useToast();
+  // Collapses subtitle + value chips on mobile once the user scrolls. Keeps
+  // them on tablet+ since horizontal space isn't as scarce there.
+  const scrolled = useScrolled(80);
   const [platform, setPlatform] = useState<Platform | null>(() => {
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
     return saved === 'instagram' || saved === 'facebook' || saved === 'tiktok' ? saved : null;
@@ -29,9 +34,46 @@ export function App() {
   const [result, setResult] = useState<ResolveResponse | null>(null);
   const [error, setError] = useState<{ message: string; code?: string; requestId?: string } | null>(null);
 
+  // Track which platform value transitioned the user from "no selection" so
+  // we only scroll the form into view when it's a fresh pick — not on every
+  // toggle, not on hydration from localStorage. Avoids jumping the page on
+  // initial paint and on switch-back-and-forth tinkering.
+  const isInitialMount = useRef(true);
+  const urlFormRef = useRef<HTMLElement>(null);
+  const resultsRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
     if (platform) localStorage.setItem(STORAGE_KEY, platform);
   }, [platform]);
+
+  // Auto-scroll the URL form into view when the user picks a platform. Skip
+  // the very first render so we don't yank the page when the saved platform
+  // re-hydrates from localStorage.
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (!platform) return;
+    // rAF lets the section render before we measure its position.
+    const handle = window.requestAnimationFrame(() => {
+      // Account for the sticky header (~64-110px depending on viewport).
+      const headerHeight = document.querySelector('header')?.offsetHeight ?? 80;
+      scrollIntoView(urlFormRef.current, { offsetTop: headerHeight + 12 });
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [platform]);
+
+  // Auto-scroll the results into view once a successful resolve renders so
+  // the user doesn't have to hunt for them below the guide on mobile.
+  useEffect(() => {
+    if (!result || result.mediaItems.length === 0) return;
+    const handle = window.requestAnimationFrame(() => {
+      const headerHeight = document.querySelector('header')?.offsetHeight ?? 80;
+      scrollIntoView(resultsRef.current, { offsetTop: headerHeight + 12 });
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [result]);
 
   function handlePlatformChange(p: Platform) {
     setPlatform(p);
@@ -84,11 +126,22 @@ export function App() {
     <div className="relative min-h-[100dvh] flex flex-col">
       <div className="bg-mesh" aria-hidden="true" />
 
-      <header className="glass-strong sticky top-0 z-20 pt-safe-t pl-safe-l pr-safe-r">
-        <div className="max-w-3xl mx-auto px-4 py-4 sm:py-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0">
+      <header
+        data-compact={scrolled ? 'true' : 'false'}
+        className="glass-strong sticky top-0 z-20 pt-safe-t pl-safe-l pr-safe-r transition-[padding] duration-200 motion-reduce:transition-none"
+      >
+        <div
+          className={`max-w-3xl mx-auto px-4 flex flex-row items-center justify-between gap-3 sm:gap-4 ${
+            scrolled ? 'py-2.5 sm:py-3' : 'py-3 sm:py-6'
+          } transition-[padding] duration-200 motion-reduce:transition-none`}
+        >
+          <div className="min-w-0 flex-1">
             <h1
-              className="text-xl xs:text-2xl sm:text-3xl font-bold bg-clip-text text-transparent"
+              className={`font-bold bg-clip-text text-transparent leading-tight transition-[font-size] duration-200 motion-reduce:transition-none ${
+                scrolled
+                  ? 'text-base sm:text-2xl'
+                  : 'text-xl xs:text-2xl sm:text-3xl'
+              }`}
               style={{
                 backgroundImage:
                   'linear-gradient(90deg, rgb(var(--neon-1)), rgb(var(--neon-2)), rgb(var(--neon-3)), rgb(var(--neon-4)))',
@@ -96,14 +149,25 @@ export function App() {
             >
               {t.app.title}
             </h1>
-            <p className="text-xs sm:text-sm text-fg-muted mt-1">{t.app.subtitle}</p>
-            <ul className="mt-2 flex flex-wrap items-center gap-1.5" aria-label={t.app.title}>
-              <ValueChip label={t.app.chips.free} variant="success" />
-              <ValueChip label={t.app.chips.noSignup} variant="accent" />
-              <ValueChip label={t.app.chips.private} variant="neutral" />
-            </ul>
+            {/* On mobile the subtitle + chips disappear when scrolled to free
+                ~80px of viewport. Tablet+ keeps them visible — there's room. */}
+            <div
+              aria-hidden={scrolled ? 'true' : undefined}
+              className={`overflow-hidden transition-[max-height,opacity,margin] duration-200 motion-reduce:transition-none ${
+                scrolled
+                  ? 'max-h-0 opacity-0 mt-0 sm:max-h-32 sm:opacity-100 sm:mt-1'
+                  : 'max-h-32 opacity-100 mt-1'
+              }`}
+            >
+              <p className="text-xs sm:text-sm text-fg-muted">{t.app.subtitle}</p>
+              <ul className="mt-2 flex flex-wrap items-center gap-1.5">
+                <ValueChip label={t.app.chips.free} variant="success" />
+                <ValueChip label={t.app.chips.noSignup} variant="accent" />
+                <ValueChip label={t.app.chips.private} variant="neutral" />
+              </ul>
+            </div>
           </div>
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <LanguageSelector />
             <ThemeToggle />
           </div>
@@ -122,7 +186,7 @@ export function App() {
 
         {platform && (
           <>
-            <section className="space-y-3">
+            <section ref={urlFormRef} className="space-y-3 scroll-mt-24">
               <StepHeader
                 step={2}
                 label={t.steps.pasteAndDownload}
@@ -163,7 +227,7 @@ export function App() {
         )}
 
         {result && result.mediaItems.length > 0 && (
-          <section className="space-y-3">
+          <section ref={resultsRef} className="space-y-3 scroll-mt-24">
             <ResultsHeader
               platform={result.platform}
               kind={result.kind}

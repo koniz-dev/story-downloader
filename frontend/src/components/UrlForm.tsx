@@ -3,6 +3,7 @@ import type { Platform } from '../types';
 import { detectPlatform, detectKind } from '../lib/platform';
 import { format, useI18n } from '../lib/i18n';
 import { useToast } from '../lib/toast';
+import { scrollFocusedIntoView } from '../lib/scroll';
 
 interface Props {
   platform: Platform;
@@ -95,6 +96,7 @@ export function UrlForm({ platform, loading, onSubmit, onPlatformSwitch }: Props
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onBlur={() => setTouched(true)}
+            onFocus={() => scrollFocusedIntoView(inputRef.current)}
             className="flex-1 bg-transparent rounded-xl px-4 py-3 min-h-[52px] text-base text-fg placeholder:text-fg-muted focus:outline-none disabled:opacity-60"
             disabled={loading}
             aria-invalid={wrongPlatform || notUrl ? true : undefined}
