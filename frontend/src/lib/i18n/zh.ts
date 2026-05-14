@@ -108,10 +108,8 @@ export const zh: Translations = {
     video: '视频',
     image: '图片',
     download: '下载',
-    copyUrl: '复制 URL',
   },
   toast: {
-    copied: '链接已复制',
     downloadStarted: '已开始下载',
     downloadingAll: '正在下载 {n} 个文件',
   },

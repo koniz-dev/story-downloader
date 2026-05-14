@@ -108,10 +108,8 @@ export const vi: Translations = {
     video: 'Video',
     image: 'Hình ảnh',
     download: 'Tải xuống',
-    copyUrl: 'Sao chép URL',
   },
   toast: {
-    copied: 'Đã sao chép liên kết',
     downloadStarted: 'Đã bắt đầu tải',
     downloadingAll: 'Đang tải {n} tệp',
   },

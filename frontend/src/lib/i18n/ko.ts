@@ -108,10 +108,8 @@ export const ko: Translations = {
     video: '동영상',
     image: '이미지',
     download: '다운로드',
-    copyUrl: 'URL 복사',
   },
   toast: {
-    copied: '링크가 복사되었습니다',
     downloadStarted: '다운로드를 시작했습니다',
     downloadingAll: '{n}개의 파일을 다운로드 중',
   },

@@ -108,10 +108,8 @@ export const en: Translations = {
     video: 'Video',
     image: 'Image',
     download: 'Download',
-    copyUrl: 'Copy URL',
   },
   toast: {
-    copied: 'Link copied',
     downloadStarted: 'Download started',
     downloadingAll: 'Downloading {n} files',
   },
