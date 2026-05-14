@@ -35,12 +35,15 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   const items = extractFromHtml(html);
 
   if (items.length === 0) {
+    // 422 (not 404): we got Facebook's page successfully but couldn't find
+    // playable media in it. The endpoint and the post both exist; the
+    // request is just unprocessable. See same rationale in tiktok.ts.
     throw new ResolveError(
       kind === 'story'
         ? 'Facebook stories are almost always private — anonymous requests cannot fetch them.'
         : 'Could not extract media. The post may be private, friends-only, or the page structure has changed.',
       kind === 'story' ? 'FACEBOOK_STORY_BLOCKED' : 'FACEBOOK_NO_MEDIA',
-      404,
+      422,
     );
   }
 

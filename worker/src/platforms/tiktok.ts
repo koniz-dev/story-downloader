@@ -177,10 +177,15 @@ export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
   const cover = extractCover(itemStruct);
   const hasPlayAddr = !!extractPlayAddr(itemStruct);
   if (!hasPlayAddr && !cover) {
+    // 422 (not 404): we successfully fetched & parsed TikTok's page — the
+    // resource exists. The request is just unprocessable because we couldn't
+    // recover playAddr/cover. 404 would falsely imply the endpoint or video
+    // is missing and surfaces a red "GET /api/resolve 404" in DevTools that
+    // looks like the worker is broken.
     throw new ResolveError(
       'Could not extract media. The video may be private, geo-restricted, or TikTok may have changed its page structure.',
       'TIKTOK_NO_MEDIA',
-      404,
+      422,
     );
   }
 
@@ -233,7 +238,7 @@ function ogFallback(html: string, kind: ContentKind, finalUrl: string): ResolveR
     throw new ResolveError(
       'Could not extract media. The video may be private, geo-restricted, or TikTok may have changed its page structure.',
       'TIKTOK_NO_MEDIA',
-      404,
+      422,
     );
   }
   const decoded = decodeHtml(imageUrl);

@@ -42,12 +42,15 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
   }
 
   if (items.length === 0) {
+    // 422 (not 404): we got Instagram's page successfully but couldn't find
+    // playable media in it. The endpoint and the post both exist; the
+    // request is just unprocessable. See same rationale in tiktok.ts.
     throw new ResolveError(
       kind === 'story'
         ? 'Could not extract media. Instagram stories usually require login — only a few public stories work anonymously.'
         : 'Could not extract media. The post may be private or the page structure has changed.',
       kind === 'story' ? 'INSTAGRAM_STORY_BLOCKED' : 'INSTAGRAM_NO_MEDIA',
-      404,
+      422,
     );
   }
 
