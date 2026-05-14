@@ -37,8 +37,24 @@ jobs:
       - name: Test (unit)
         run: npm test
 
+      # Cache the browser binaries (~150 MB). System libraries live in /usr
+      # so they are NOT in the cache — `install-deps` still runs on hit.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        # NOTE: tag-pinned for initial commit. Dependabot will SHA-pin on its
+        # next github-actions run to match the existing pin style.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Test (E2E)
         run: npm run test:e2e

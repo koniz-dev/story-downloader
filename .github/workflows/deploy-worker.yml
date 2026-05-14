@@ -11,6 +11,14 @@ on:
 permissions:
   contents: read
 
+# Serialize worker deploys. cancel-in-progress: false because aborting a
+# half-finished `wrangler deploy` is worse than queueing — wrangler is
+# transactional but cancelling mid-upload can leave the dashboard showing
+# a stale-looking deploy.
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

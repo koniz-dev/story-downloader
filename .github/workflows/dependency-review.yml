@@ -1,0 +1,25 @@
+name: Dependency Review
+
+# Gate PRs on dependency bumps that introduce known-vulnerable transitive
+# packages. Free for public repos and runs against GitHub's advisory DB.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # NOTE: tag-pinned for initial commit. Dependabot will SHA-pin on its
+      # next github-actions run to match the existing pin style.
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
