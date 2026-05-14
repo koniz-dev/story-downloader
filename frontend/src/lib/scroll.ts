@@ -6,11 +6,32 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+// Px of buffer at the bottom of the viewport that still counts as "visible".
+// If less than this would be visible, we treat the element as below the fold
+// and scroll.
+const VISIBLE_BUFFER_BOTTOM = 80;
+
+function isComfortablyVisible(el: HTMLElement, topOffset: number): boolean {
+  const rect = el.getBoundingClientRect();
+  const viewportH = window.innerHeight;
+  // "Comfortably visible" = the element's top sits below any sticky header
+  // AND above the bottom buffer, so the user can see at least the start of
+  // its content without scrolling.
+  return rect.top >= topOffset && rect.top <= viewportH - VISIBLE_BUFFER_BOTTOM;
+}
+
+// Smooth-scrolls `el` into view. Skips when the element is already visible
+// — that's almost always the right thing on desktop (tall viewports already
+// show the form/results after a state change, so scrolling would be unwanted
+// motion). Pass `force: true` to override this and always scroll.
 export function scrollIntoView(
   el: HTMLElement | null,
-  options: { block?: ScrollLogicalPosition; offsetTop?: number } = {},
+  options: { block?: ScrollLogicalPosition; offsetTop?: number; force?: boolean } = {},
 ) {
   if (!el || typeof window === 'undefined') return;
+  const offset = options.offsetTop ?? 0;
+  if (!options.force && isComfortablyVisible(el, offset)) return;
+
   const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
   const block = options.block ?? 'start';
   // If we need a manual offset (e.g. to clear a sticky header), compute the
@@ -29,25 +50,32 @@ export function scrollIntoView(
   }
 }
 
-// Mobile keyboards push the visualViewport up. Scroll the element so it's
-// visible above the keyboard. Falls back to a plain scrollIntoView if the
-// visualViewport API isn't available.
+// Mobile keyboard avoidance. On focus, if iOS/Android surfaces a software
+// keyboard, visualViewport.height shrinks. We measure that shrink and only
+// scroll when the input would actually be occluded. On desktop, where there
+// is no virtual keyboard, visualViewport.height equals window.innerHeight and
+// this function is a no-op — the previous version moved the page on every
+// input click, which felt like a glitch.
+const KEYBOARD_DETECT_THRESHOLD_PX = 150;
+
 export function scrollFocusedIntoView(el: HTMLElement | null) {
   if (!el || typeof window === 'undefined') return;
-  const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
   // Give the browser a beat to surface the keyboard so visualViewport.height
-  // reflects the post-keyboard window. Two rAFs is the cross-engine recipe;
-  // 200ms is a safety net for iOS where viewport changes lag the focus event.
+  // reflects the post-keyboard window. 200ms is a safety net for iOS where
+  // the viewport change lags the focus event.
   window.setTimeout(() => {
     const vv = window.visualViewport;
+    if (!vv) return;
+    const keyboardLikelyOpen = window.innerHeight - vv.height >= KEYBOARD_DETECT_THRESHOLD_PX;
+    if (!keyboardLikelyOpen) return;
+
     const rect = el.getBoundingClientRect();
-    const viewportH = vv ? vv.height : window.innerHeight;
-    const viewportTopOffset = vv ? vv.offsetTop : 0;
-    // Desired: input sits at ~40% from the top of the *visible* viewport.
-    const desiredY = viewportTopOffset + viewportH * 0.4;
-    const delta = rect.top - desiredY;
-    // Skip tiny adjustments that would feel jittery.
-    if (Math.abs(delta) < 8) return;
-    window.scrollBy({ top: delta, behavior });
+    const viewportBottom = vv.offsetTop + vv.height;
+    // 16px margin so the input doesn't sit pixel-flush against the keyboard.
+    const overlap = rect.bottom + 16 - viewportBottom;
+    if (overlap <= 0) return;
+
+    const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
+    window.scrollBy({ top: overlap, behavior });
   }, 200);
 }
