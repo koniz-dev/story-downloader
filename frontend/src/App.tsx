@@ -266,10 +266,17 @@ export function App() {
               </section>
             )}
 
-            <section className="space-y-3">
-              <StepHeader step={3} label={t.steps.guide} state="pending" />
-              <CollapsibleGuide platform={platform} />
-            </section>
+            {/* Guide is preparatory content — only useful BEFORE submit.
+                Hiding it once feedback exists (error/loading/result) keeps
+                step 3 from getting visually shoved around by content that
+                lands between step 2 and step 3. Returns when the user
+                clears the error or switches platforms. */}
+            {!error && !loading && !result && (
+              <section className="space-y-3">
+                <StepHeader step={3} label={t.steps.guide} state="pending" />
+                <CollapsibleGuide platform={platform} />
+              </section>
+            )}
           </>
         )}
       </main>
