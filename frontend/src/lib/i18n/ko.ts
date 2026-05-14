@@ -81,6 +81,10 @@ export const ko: Translations = {
     label: '{platform} URL 붙여넣기',
     submit: '다운로드',
     submitting: '처리 중…',
+    paste: '붙여넣기',
+    pasteFailed: '클립보드 접근이 차단되었습니다. Ctrl/⌘+V로 직접 붙여넣으세요.',
+    clear: '입력 지우기',
+    switchTo: '{platform}로 전환',
     error: {
       wrongPlatform: '이 URL은 {got}의 것이며 {expected}이(가) 아닙니다. 위쪽 탭을 바꾸거나 다른 URL을 붙여넣으세요.',
       notUrl: '유효하지 않은 URL입니다. 브라우저 주소창에서 복사해 주세요.',
@@ -92,16 +96,28 @@ export const ko: Translations = {
     found: '{n}개의 미디어를 찾았습니다',
     noMedia: '이 게시물에서 미디어를 찾을 수 없습니다.',
     degraded: '썸네일만 가져올 수 있었습니다. Instagram이 비로그인 요청의 동영상 접근을 제한할 수 있습니다.',
+    downloadAll: '모두 다운로드',
+    loading: '미디어를 분석 중…',
   },
   media: {
     video: '동영상',
     image: '이미지',
     download: '다운로드',
+    copyUrl: 'URL 복사',
+  },
+  toast: {
+    copied: '링크가 복사되었습니다',
+    downloadStarted: '다운로드를 시작했습니다',
+    downloadingAll: '{n}개의 파일을 다운로드 중',
   },
   alert: {
     close: '닫기',
     code: '코드',
     requestId: '요청 ID',
+  },
+  footer: {
+    source: 'GitHub 소스',
+    privateBadge: '추적 없음 · 계정 불필요',
   },
   errorBoundary: {
     title: '문제가 발생했습니다',

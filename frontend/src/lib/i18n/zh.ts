@@ -81,6 +81,10 @@ export const zh: Translations = {
     label: '粘贴 {platform} URL',
     submit: '下载',
     submitting: '处理中…',
+    paste: '粘贴',
+    pasteFailed: '剪贴板访问被阻止。请用 Ctrl/⌘+V 手动粘贴。',
+    clear: '清空输入',
+    switchTo: '切换到 {platform}',
     error: {
       wrongPlatform: '此 URL 属于 {got},不是 {expected}。请切换上方平台标签或粘贴其他 URL。',
       notUrl: 'URL 无效。请从浏览器地址栏复制。',
@@ -92,16 +96,28 @@ export const zh: Translations = {
     found: '找到 {n} 个媒体',
     noMedia: '此帖子未找到媒体。',
     degraded: '仅获取到缩略图 — Instagram 可能正在限制未登录请求的视频访问。',
+    downloadAll: '全部下载',
+    loading: '正在解析媒体…',
   },
   media: {
     video: '视频',
     image: '图片',
     download: '下载',
+    copyUrl: '复制 URL',
+  },
+  toast: {
+    copied: '链接已复制',
+    downloadStarted: '已开始下载',
+    downloadingAll: '正在下载 {n} 个文件',
   },
   alert: {
     close: '关闭',
     code: '错误码',
     requestId: '请求 ID',
+  },
+  footer: {
+    source: 'GitHub 源码',
+    privateBadge: '无跟踪 · 无需账号',
   },
   errorBoundary: {
     title: '出错了',

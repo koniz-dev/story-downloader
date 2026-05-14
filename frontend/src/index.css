@@ -204,4 +204,45 @@
   @media (prefers-reduced-motion: reduce) {
     .animate-fadeUp { animation: none; }
   }
+
+  .animate-toastUp {
+    animation: toastUp 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  @keyframes toastUp {
+    from { opacity: 0; transform: translateY(16px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-toastUp { animation: none; }
+  }
+
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: rgb(var(--bg-sunken));
+  }
+
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--text-primary) / 0.06),
+      transparent
+    );
+    animation: skeletonShimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes skeletonShimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer::after { animation: none; opacity: 0.4; }
+  }
 }

@@ -56,6 +56,10 @@ export interface Translations {
     label: string;
     submit: string;
     submitting: string;
+    paste: string;
+    pasteFailed: string;
+    clear: string;
+    switchTo: string;
     error: {
       wrongPlatform: string;
       notUrl: string;
@@ -67,16 +71,28 @@ export interface Translations {
     found: string;
     noMedia: string;
     degraded: string;
+    downloadAll: string;
+    loading: string;
   };
   media: {
     video: string;
     image: string;
     download: string;
+    copyUrl: string;
+  };
+  toast: {
+    copied: string;
+    downloadStarted: string;
+    downloadingAll: string;
   };
   alert: {
     close: string;
     code: string;
     requestId: string;
+  };
+  footer: {
+    source: string;
+    privateBadge: string;
   };
   errorBoundary: {
     title: string;

@@ -81,6 +81,10 @@ export const ja: Translations = {
     label: '{platform} の URL を貼り付け',
     submit: 'ダウンロード',
     submitting: '処理中…',
+    paste: '貼り付け',
+    pasteFailed: 'クリップボードへのアクセスがブロックされています。Ctrl/⌘+V で手動で貼り付けてください。',
+    clear: '入力をクリア',
+    switchTo: '{platform} に切り替え',
     error: {
       wrongPlatform: 'この URL は {got} のものです({expected} ではありません)。上のタブを切り替えるか、別の URL を貼り付けてください。',
       notUrl: 'URL が無効です。ブラウザのアドレスバーからコピーしてください。',
@@ -92,16 +96,28 @@ export const ja: Translations = {
     found: '{n} 件のメディアが見つかりました',
     noMedia: 'この投稿にメディアが見つかりません。',
     degraded: 'サムネイルのみ取得できました。Instagram が未ログインリクエストの動画アクセスを制限している可能性があります。',
+    downloadAll: 'すべてダウンロード',
+    loading: 'メディアを解析中…',
   },
   media: {
     video: '動画',
     image: '画像',
     download: 'ダウンロード',
+    copyUrl: 'URL をコピー',
+  },
+  toast: {
+    copied: 'リンクをコピーしました',
+    downloadStarted: 'ダウンロードを開始しました',
+    downloadingAll: '{n} 件のファイルをダウンロード中',
   },
   alert: {
     close: '閉じる',
     code: 'コード',
     requestId: 'リクエスト ID',
+  },
+  footer: {
+    source: 'GitHub のソース',
+    privateBadge: 'トラッキングなし · アカウント不要',
   },
   errorBoundary: {
     title: '問題が発生しました',

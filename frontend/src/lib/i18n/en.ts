@@ -81,6 +81,10 @@ export const en: Translations = {
     label: 'Paste {platform} URL',
     submit: 'Download',
     submitting: 'Processing…',
+    paste: 'Paste',
+    pasteFailed: 'Clipboard access blocked. Paste manually with Ctrl/⌘+V.',
+    clear: 'Clear input',
+    switchTo: 'Switch to {platform}',
     error: {
       wrongPlatform: 'This URL is from {got}, not {expected}. Switch the platform tab above or paste a different URL.',
       notUrl: 'Invalid URL. Copy it from your browser’s address bar.',
@@ -92,16 +96,28 @@ export const en: Translations = {
     found: 'Found {n} media',
     noMedia: 'No media found in this post.',
     degraded: 'Only the thumbnail could be retrieved — Instagram may be restricting video access for unauthenticated requests.',
+    downloadAll: 'Download all',
+    loading: 'Resolving media…',
   },
   media: {
     video: 'Video',
     image: 'Image',
     download: 'Download',
+    copyUrl: 'Copy URL',
+  },
+  toast: {
+    copied: 'Link copied',
+    downloadStarted: 'Download started',
+    downloadingAll: 'Downloading {n} files',
   },
   alert: {
     close: 'Close',
     code: 'code',
     requestId: 'request id',
+  },
+  footer: {
+    source: 'Source on GitHub',
+    privateBadge: 'No tracking · No accounts',
   },
   errorBoundary: {
     title: 'Something went wrong',

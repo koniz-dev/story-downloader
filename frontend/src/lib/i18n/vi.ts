@@ -81,6 +81,10 @@ export const vi: Translations = {
     label: 'Dán URL {platform}',
     submit: 'Tải xuống',
     submitting: 'Đang xử lý…',
+    paste: 'Dán',
+    pasteFailed: 'Trình duyệt chặn quyền clipboard. Dán thủ công bằng Ctrl/⌘+V.',
+    clear: 'Xoá ô nhập',
+    switchTo: 'Chuyển sang {platform}',
     error: {
       wrongPlatform: 'URL này thuộc {got}, không phải {expected}. Đổi tab nền tảng phía trên hoặc dán URL khác.',
       notUrl: 'URL không hợp lệ. Hãy copy từ thanh địa chỉ trình duyệt.',
@@ -92,16 +96,28 @@ export const vi: Translations = {
     found: 'Tìm thấy {n} media',
     noMedia: 'Không tìm thấy media nào trong bài này.',
     degraded: 'Chỉ lấy được thumbnail — Instagram có thể đang hạn chế truy cập video cho request không đăng nhập.',
+    downloadAll: 'Tải tất cả',
+    loading: 'Đang phân giải media…',
   },
   media: {
     video: 'Video',
     image: 'Hình ảnh',
     download: 'Tải xuống',
+    copyUrl: 'Sao chép URL',
+  },
+  toast: {
+    copied: 'Đã sao chép liên kết',
+    downloadStarted: 'Đã bắt đầu tải',
+    downloadingAll: 'Đang tải {n} tệp',
   },
   alert: {
     close: 'Đóng',
     code: 'code',
     requestId: 'mã yêu cầu',
+  },
+  footer: {
+    source: 'Mã nguồn trên GitHub',
+    privateBadge: 'Không tracking · Không cần tài khoản',
   },
   errorBoundary: {
     title: 'Đã xảy ra lỗi',
