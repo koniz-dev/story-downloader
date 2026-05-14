@@ -72,28 +72,31 @@ export function MediaCard({ item, platform, kind, index = 0 }: Props) {
           {item.type}
         </span>
       </div>
-      <div className="p-3 flex items-center justify-between gap-2">
-        <span className="text-xs text-fg-muted truncate">
+      {/* Mobile: dimension line on its own row + a full-width Download CTA so
+          the primary action is unmissable with a thumb. Copy URL is a smaller
+          secondary affordance to its left. sm+ collapses everything inline. */}
+      <div className="p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-xs text-fg-muted truncate order-1 sm:order-none">
           {item.width && item.height
             ? `${item.width}×${item.height}`
             : item.type === 'video'
               ? t.media.video
               : t.media.image}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2 sm:gap-1.5 order-2 sm:order-none">
           <button
             type="button"
             onClick={handleCopy}
             aria-label={t.media.copyUrl}
             title={t.media.copyUrl}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-fg-secondary hover:text-fg hover:bg-bg-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none"
+            className="inline-flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-lg text-fg-secondary hover:text-fg bg-bg-sunken/60 hover:bg-bg-sunken sm:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none shrink-0"
           >
             <CopyIcon className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-success hover:brightness-110 active:scale-[0.97] motion-reduce:active:scale-100 px-4 py-2.5 min-h-[44px] text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success transition-[filter,transform] motion-reduce:transition-none"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-lg bg-success hover:brightness-110 active:scale-[0.98] motion-reduce:active:scale-100 px-4 py-3 sm:py-2.5 min-h-[44px] text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success transition-[filter,transform] motion-reduce:transition-none"
           >
             <DownloadIcon className="h-4 w-4" /> {t.media.download}
           </button>
