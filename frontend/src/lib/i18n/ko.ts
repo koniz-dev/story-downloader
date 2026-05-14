@@ -108,6 +108,7 @@ export const ko: Translations = {
     video: '동영상',
     image: '이미지',
     download: '다운로드',
+    play: '동영상 재생',
   },
   toast: {
     downloadStarted: '다운로드를 시작했습니다',

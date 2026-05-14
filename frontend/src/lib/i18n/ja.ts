@@ -108,6 +108,7 @@ export const ja: Translations = {
     video: '動画',
     image: '画像',
     download: 'ダウンロード',
+    play: '動画を再生',
   },
   toast: {
     downloadStarted: 'ダウンロードを開始しました',

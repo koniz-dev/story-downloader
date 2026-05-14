@@ -83,6 +83,7 @@ export interface Translations {
     video: string;
     image: string;
     download: string;
+    play: string;
   };
   toast: {
     downloadStarted: string;

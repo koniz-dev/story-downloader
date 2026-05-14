@@ -108,6 +108,7 @@ export const zh: Translations = {
     video: '视频',
     image: '图片',
     download: '下载',
+    play: '播放视频',
   },
   toast: {
     downloadStarted: '已开始下载',
