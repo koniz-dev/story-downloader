@@ -105,6 +105,16 @@ Facebook change their HTML. Include the URL that broke and the error code from
 the UI in your bug report. Platform-specific parsers live in
 [`worker/src/platforms/`](./worker/src/platforms).
 
+## Security
+
+Found a vulnerability? Please **do not** open a public issue. Use
+GitHub's [private vulnerability reporting](https://github.com/koniz-dev/story-downloader/security)
+— see [`SECURITY.md`](./SECURITY.md) for scope and what to expect.
+
+## License
+
+[MIT](./LICENSE).
+
 ## Disclaimer
 
 This is a personal project. It is not affiliated with, endorsed by, or

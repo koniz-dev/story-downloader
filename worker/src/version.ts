@@ -9,8 +9,17 @@
 export const SERVICE_NAME = 'story-dl-worker';
 export const SERVICE_VERSION = '0.1.0';
 
-const STARTED_AT_MS = Date.now();
+// Lazy init: Workers' `Date.now()` returns 0 at module top-level (the V8
+// isolate hasn't seen a real request yet), so a module-init `STARTED_AT_MS =
+// Date.now()` produces a 56-year uptime for the first probe. Defer the
+// timestamp to the first real call.
+let startedAtMs: number | null = null;
 
 export function uptimeSeconds(): number {
-  return Math.floor((Date.now() - STARTED_AT_MS) / 1000);
+  const now = Date.now();
+  if (startedAtMs === null) {
+    startedAtMs = now;
+    return 0;
+  }
+  return Math.floor((now - startedAtMs) / 1000);
 }
