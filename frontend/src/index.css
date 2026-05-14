@@ -102,6 +102,16 @@
     min-height: 100%;
   }
 
+  /* The animated .bg-mesh applies transform: translate3d + scale(1.05) which
+     can paint a few percent beyond the viewport. Browsers don't auto-clip a
+     transformed fixed element, so the page would occasionally show a
+     horizontal scrollbar on mobile. Locking x-axis here is the bulletproof
+     guard — vertical scroll continues to work normally. */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   body {
     background: rgb(var(--bg-base));
     color: rgb(var(--text-primary));
@@ -136,6 +146,18 @@
 }
 
 @layer components {
+  /* Horizontal page padding that ALWAYS gives at least 16px of breathing
+     room AND respects the landscape notch on iPhone. The old pattern of
+     `px-4 pl-safe-l pr-safe-r` on the same element fell into a Tailwind
+     specificity trap: the safe-area utilities sort after px-4 in the
+     generated stylesheet and overrode it to 0 on every non-notched phone,
+     so content rendered flush to the screen edge. max() solves both at
+     once. */
+  .px-page {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
   .glass {
     background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
     backdrop-filter: blur(16px) saturate(140%);

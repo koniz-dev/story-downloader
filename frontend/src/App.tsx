@@ -128,10 +128,10 @@ export function App() {
 
       <header
         data-compact={scrolled ? 'true' : 'false'}
-        className="glass-strong sticky top-0 z-20 pt-safe-t pl-safe-l pr-safe-r transition-[padding] duration-200 motion-reduce:transition-none"
+        className="glass-strong sticky top-0 z-20 pt-safe-t transition-[padding] duration-200 motion-reduce:transition-none"
       >
         <div
-          className={`max-w-3xl mx-auto px-4 flex flex-row items-center justify-between gap-3 sm:gap-4 ${
+          className={`max-w-3xl mx-auto px-page flex flex-row items-center justify-between gap-3 sm:gap-4 ${
             scrolled ? 'py-2.5 sm:py-3' : 'py-3 sm:py-6'
           } transition-[padding] duration-200 motion-reduce:transition-none`}
         >
@@ -174,7 +174,7 @@ export function App() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 sm:py-8 space-y-5 sm:space-y-6 pl-safe-l pr-safe-r">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-page py-6 sm:py-8 space-y-5 sm:space-y-6">
         <section className="space-y-3">
           <StepHeader
             step={1}
@@ -254,8 +254,8 @@ export function App() {
         )}
       </main>
 
-      <footer className="glass pl-safe-l pr-safe-r pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-        <div className="max-w-3xl mx-auto px-4 flex flex-col items-center gap-3 text-center">
+      <footer className="glass pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+        <div className="max-w-3xl mx-auto px-page flex flex-col items-center gap-3 text-center">
           <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-[11px] font-medium text-emerald-800 dark:text-emerald-300">
               <ShieldIcon className="h-3 w-3 text-success" />

@@ -82,7 +82,7 @@ function ToastViewport({
       'aria-atomic': 'false',
       role: 'status',
       className:
-        'pointer-events-none fixed z-50 inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col items-center gap-2 px-4',
+        'pointer-events-none fixed z-50 inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col items-center gap-2 px-page',
     },
     toasts.map((t) =>
       createElement(ToastItem, { key: t.id, toast: t, onDismiss }),
