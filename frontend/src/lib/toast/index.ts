@@ -93,13 +93,31 @@ function ToastViewport({
 const VARIANT_CLASSES: Record<ToastVariant, string> = {
   success: 'border-success/30 text-fg',
   info: 'border-accent/30 text-fg',
-  error: 'border-danger/30 text-danger',
+  error: 'border-danger/40 text-danger',
 };
 
-const ICONS: Record<ToastVariant, string> = {
-  success: 'M4 12l5 5L20 6',
-  info: 'M12 8v5m0 3.5h.01',
-  error: 'M12 8v5m0 3.5h.01',
+const ICON_TINT: Record<ToastVariant, string> = {
+  success: 'text-success',
+  info: 'text-accent',
+  error: 'text-danger',
+};
+
+interface IconShape {
+  paths: string[];
+  // True for shapes that already include closed loops (e.g. triangle) so we
+  // can keep stroke joins clean and avoid an extra `fill="currentColor"`.
+  circle?: { cx: number; cy: number; r: number };
+}
+
+const ICONS: Record<ToastVariant, IconShape> = {
+  success: { paths: ['m5 12 5 5 9-10'] },
+  info: {
+    circle: { cx: 12, cy: 12, r: 9 },
+    paths: ['M12 8v4.5', 'M12 16.25h.01'],
+  },
+  error: {
+    paths: ['M12 4 2.7 20.5h18.6L12 4Z', 'M12 10v4.5', 'M12 17.5h.01'],
+  },
 };
 
 function ToastItem({
@@ -109,6 +127,20 @@ function ToastItem({
   toast: Toast;
   onDismiss: (id: number) => void;
 }) {
+  const shape = ICONS[toast.variant];
+  const svgChildren = [
+    ...(shape.circle
+      ? [
+          createElement('circle', {
+            key: 'c',
+            cx: shape.circle.cx,
+            cy: shape.circle.cy,
+            r: shape.circle.r,
+          }),
+        ]
+      : []),
+    ...shape.paths.map((d, i) => createElement('path', { key: `p${i}`, d })),
+  ];
   return createElement(
     'div',
     {
@@ -119,15 +151,15 @@ function ToastItem({
       'svg',
       {
         viewBox: '0 0 24 24',
-        className: 'h-4 w-4 shrink-0',
+        className: `h-4 w-4 shrink-0 ${ICON_TINT[toast.variant]}`,
         fill: 'none',
         stroke: 'currentColor',
-        strokeWidth: '2.4',
+        strokeWidth: '2.2',
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
         'aria-hidden': 'true',
       },
-      createElement('path', { d: ICONS[toast.variant] }),
+      ...svgChildren,
     ),
     createElement('span', { className: 'truncate' }, toast.message),
   );

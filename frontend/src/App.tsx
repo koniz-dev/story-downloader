@@ -8,6 +8,7 @@ import { ResultsHeader } from './components/ResultsHeader';
 import { ErrorAlert } from './components/ErrorAlert';
 import { LanguageSelector } from './components/LanguageSelector';
 import { ThemeToggle } from './components/ThemeToggle';
+import { StepHeader } from './components/StepHeader';
 import { resolveMedia, ApiError } from './lib/api';
 import { track } from './lib/track';
 import { format, useI18n } from './lib/i18n';
@@ -96,6 +97,11 @@ export function App() {
               {t.app.title}
             </h1>
             <p className="text-xs sm:text-sm text-fg-muted mt-1">{t.app.subtitle}</p>
+            <ul className="mt-2 flex flex-wrap items-center gap-1.5" aria-label={t.app.title}>
+              <ValueChip label={t.app.chips.free} variant="success" />
+              <ValueChip label={t.app.chips.noSignup} variant="accent" />
+              <ValueChip label={t.app.chips.private} variant="neutral" />
+            </ul>
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <LanguageSelector />
@@ -106,14 +112,22 @@ export function App() {
 
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 sm:py-8 space-y-5 sm:space-y-6 pl-safe-l pr-safe-r">
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.selectPlatform}</h2>
+          <StepHeader
+            step={1}
+            label={t.steps.selectPlatform}
+            state={platform ? 'completed' : 'active'}
+          />
           <PlatformSelector value={platform} onChange={handlePlatformChange} />
         </section>
 
         {platform && (
           <>
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.pasteAndDownload}</h2>
+              <StepHeader
+                step={2}
+                label={t.steps.pasteAndDownload}
+                state={result && result.mediaItems.length > 0 ? 'completed' : 'active'}
+              />
               <UrlForm
                 platform={platform}
                 loading={loading}
@@ -123,7 +137,7 @@ export function App() {
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">{t.steps.guide}</h2>
+              <StepHeader step={3} label={t.steps.guide} state="pending" />
               <CollapsibleGuide platform={platform} />
             </section>
           </>
@@ -197,6 +211,40 @@ export function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+const CHIP_VARIANTS = {
+  // text-emerald-800 / dark:text-emerald-300 passes WCAG AA on the tinted
+  // bg (the raw --success token alone hit 3.3:1 — see audit in commit
+  // history). Keeping that contrast guarantee centralised here.
+  success: 'border-success/30 bg-success/10 text-emerald-800 dark:text-emerald-300',
+  accent: 'border-accent/30 bg-accent/10 text-accent',
+  neutral: 'border-border-subtle bg-bg-raised/40 text-fg-secondary',
+} as const;
+
+function ValueChip({
+  label,
+  variant,
+}: {
+  label: string;
+  variant: keyof typeof CHIP_VARIANTS;
+}) {
+  return (
+    <li
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${CHIP_VARIANTS[variant]}`}
+    >
+      <DotIcon className="h-1.5 w-1.5" />
+      {label}
+    </li>
+  );
+}
+
+function DotIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 8 8" className={className} aria-hidden="true">
+      <circle cx="4" cy="4" r="3" fill="currentColor" />
+    </svg>
   );
 }
 

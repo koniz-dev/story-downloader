@@ -5,6 +5,11 @@ export const vi: Translations = {
     title: 'Social Downloader',
     subtitle: 'Tải video công khai từ Instagram, Facebook và TikTok',
     footer: 'Tool dành cho mục đích cá nhân. Tôn trọng quyền riêng tư và bản quyền của người tạo nội dung.',
+    chips: {
+      free: 'Miễn phí',
+      noSignup: 'Không cần đăng ký',
+      private: 'Riêng tư',
+    },
   },
   language: {
     label: 'Ngôn ngữ',
@@ -16,9 +21,9 @@ export const vi: Translations = {
     dark: 'Tối',
   },
   steps: {
-    selectPlatform: '1. Chọn nền tảng',
-    guide: '3. Hướng dẫn lấy link',
-    pasteAndDownload: '2. Dán link & tải',
+    selectPlatform: 'Chọn nền tảng',
+    guide: 'Hướng dẫn lấy link',
+    pasteAndDownload: 'Dán link & tải',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel, Post, IGTV' },

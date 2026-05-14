@@ -5,6 +5,11 @@ export const ja: Translations = {
     title: 'Social Downloader',
     subtitle: 'Instagram・Facebook・TikTok の公開動画をダウンロード',
     footer: '個人利用のみ。コンテンツ制作者のプライバシーと著作権を尊重してください。',
+    chips: {
+      free: '無料',
+      noSignup: '登録不要',
+      private: 'プライベート',
+    },
   },
   language: {
     label: '言語',
@@ -16,9 +21,9 @@ export const ja: Translations = {
     dark: 'ダーク',
   },
   steps: {
-    selectPlatform: '1. プラットフォームを選択',
-    guide: '3. リンクの取得方法',
-    pasteAndDownload: '2. リンクを貼ってダウンロード',
+    selectPlatform: 'プラットフォームを選択',
+    guide: 'リンクの取得方法',
+    pasteAndDownload: 'リンクを貼ってダウンロード',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'リール / 投稿 / IGTV' },

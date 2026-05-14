@@ -5,6 +5,11 @@ export const ko: Translations = {
     title: 'Social Downloader',
     subtitle: 'Instagram, Facebook, TikTok의 공개 동영상 다운로드',
     footer: '개인 용도로만 사용하세요. 창작자의 개인정보와 저작권을 존중해 주세요.',
+    chips: {
+      free: '무료',
+      noSignup: '회원가입 불필요',
+      private: '비공개',
+    },
   },
   language: {
     label: '언어',
@@ -16,9 +21,9 @@ export const ko: Translations = {
     dark: '다크',
   },
   steps: {
-    selectPlatform: '1. 플랫폼 선택',
-    guide: '3. 링크 가져오는 방법',
-    pasteAndDownload: '2. 링크 붙여넣고 다운로드',
+    selectPlatform: '플랫폼 선택',
+    guide: '링크 가져오는 방법',
+    pasteAndDownload: '링크 붙여넣고 다운로드',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: '릴스 / 게시물 / IGTV' },

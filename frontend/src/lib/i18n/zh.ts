@@ -5,6 +5,11 @@ export const zh: Translations = {
     title: 'Social Downloader',
     subtitle: '下载 Instagram、Facebook 和 TikTok 的公开视频',
     footer: '仅供个人使用。请尊重创作者的隐私和版权。',
+    chips: {
+      free: '免费',
+      noSignup: '无需注册',
+      private: '私密',
+    },
   },
   language: {
     label: '语言',
@@ -16,9 +21,9 @@ export const zh: Translations = {
     dark: '深色',
   },
   steps: {
-    selectPlatform: '1. 选择平台',
-    guide: '3. 如何获取链接',
-    pasteAndDownload: '2. 粘贴链接并下载',
+    selectPlatform: '选择平台',
+    guide: '如何获取链接',
+    pasteAndDownload: '粘贴链接并下载',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel / 帖子 / IGTV' },

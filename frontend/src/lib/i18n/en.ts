@@ -5,6 +5,11 @@ export const en: Translations = {
     title: 'Social Downloader',
     subtitle: 'Download public videos from Instagram, Facebook and TikTok',
     footer: 'For personal use only. Respect the privacy and copyright of content creators.',
+    chips: {
+      free: 'Free',
+      noSignup: 'No signup',
+      private: 'Private',
+    },
   },
   language: {
     label: 'Language',
@@ -16,9 +21,9 @@ export const en: Translations = {
     dark: 'Dark',
   },
   steps: {
-    selectPlatform: '1. Choose platform',
-    guide: '3. How to get the link',
-    pasteAndDownload: '2. Paste link & download',
+    selectPlatform: 'Choose platform',
+    guide: 'How to get the link',
+    pasteAndDownload: 'Paste link & download',
   },
   platform: {
     instagram: { name: 'Instagram', kinds: 'Reel, Post, IGTV' },

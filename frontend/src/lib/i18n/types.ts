@@ -5,6 +5,11 @@ export interface Translations {
     title: string;
     subtitle: string;
     footer: string;
+    chips: {
+      free: string;
+      noSignup: string;
+      private: string;
+    };
   };
   language: {
     label: string;
