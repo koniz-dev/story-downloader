@@ -146,3 +146,57 @@ any OG image / title / description change), force re-scrape:
 
 Skip this step on routine code-only deploys — only run it when you've
 changed the meta tags or the OG images.
+
+## 8. Rollback
+
+### 8.1 Worker (Cloudflare)
+
+`wrangler` retains the last ~10 versions of a Worker. To revert without
+running CI:
+
+```bash
+cd worker
+npx wrangler deployments list           # find the version ID to roll back to
+npx wrangler rollback <VERSION_ID>      # or omit the ID for an interactive picker
+```
+
+Use this for "the deploy I just shipped is broken, get production back to
+the previous version *now*."
+
+### 8.2 Frontend (GitHub Pages)
+
+GitHub Pages has no built-in rollback button. Two paths, in order of
+preference:
+
+1. **Re-run an older successful deploy.**
+   - Actions → **Deploy Frontend to GitHub Pages** → open the run for the
+     last known-good commit → **Re-run all jobs**.
+   - The run rebuilds and re-uploads that commit's artifact, which
+     becomes live. No code change needed.
+2. **Revert the bad commit and push.**
+   ```bash
+   git revert <bad-sha>
+   git push origin main
+   ```
+   The deploy workflow fires on `main`, rebuilds, and replaces the live
+   site. Use this when the bad commit is several commits behind and a
+   re-run of the older job isn't viable.
+
+### 8.3 When NOT to roll back
+
+If the symptom is `*_NO_MEDIA`, `*_RATE_LIMITED`, `*_NOT_FOUND`, or a
+broken parser across an entire platform, the upstream (Meta / TikTok) has
+changed — rolling back the Worker will not help. Fix the parser in
+`worker/src/platforms/<platform>.ts`, add a test, and ship a forward fix.
+
+### 8.4 After-rollback checklist
+
+1. Hit `GET /api/version` — confirm `commit` matches the version you
+   rolled back to.
+2. Open the frontend and run one known-good URL through resolve +
+   download end-to-end.
+3. Verify the synthetic-probe workflow is green (Actions → Synthetic
+   Probe → latest run).
+4. File an issue describing the regression so the next forward fix
+   doesn't re-introduce it.
+

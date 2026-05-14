@@ -1,0 +1,88 @@
+name: Synthetic Probe
+
+# Pokes /api/health every 15 minutes from a GitHub-hosted runner. On failure
+# it files (or re-uses) a single GitHub Issue so we hear about a regression
+# without burning a paid uptime monitor. GitHub may delay scheduled runs by
+# 5-30 min during peak — treat this as "we'll know within ~30 min", not SLA.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: synthetic-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe /api/health
+        id: probe
+        env:
+          # Reuses the same variable the Pages build embeds into the SPA, so
+          # there's a single source of truth for the worker URL.
+          BASE: ${{ vars.VITE_WORKER_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE" ]; then
+            echo "::error::vars.VITE_WORKER_URL is not set; cannot probe"
+            exit 1
+          fi
+          url="${BASE%/}/api/health"
+          echo "Probing $url"
+          status=$(curl -sS -o /tmp/body.json -w '%{http_code}' --max-time 10 \
+            -H 'X-Request-Id: 00000000-0000-4000-8000-000000000000' \
+            "$url")
+          body=$(cat /tmp/body.json || echo '<no body>')
+          echo "status=$status"
+          echo "body=$body"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" != "200" ]; then
+            echo "::error::probe non-200 ($status)"
+            exit 1
+          fi
+          ok=$(printf '%s' "$body" | jq -r '.ok // false')
+          if [ "$ok" != "true" ]; then
+            echo "::error::health body not ok: $body"
+            exit 1
+          fi
+
+      - name: File or reuse issue on failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          STATUS: ${{ steps.probe.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Ensure label exists. `|| true` because subsequent runs find it
+          # already there.
+          gh label create "synthetic-probe-failure" \
+            --color "B60205" \
+            --description "Auto-filed by synthetic-probe workflow" 2>/dev/null || true
+
+          # Dedup: skip if an open issue with this label already exists.
+          existing=$(gh issue list --state open --label "synthetic-probe-failure" --json number --jq 'length')
+          if [ "$existing" -gt 0 ]; then
+            echo "Open probe-failure issue already filed; skipping."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Synthetic probe failed (status=${STATUS:-?})" \
+            --label "synthetic-probe-failure" \
+            --body "Probe of \`/api/health\` failed in run: ${RUN_URL}
+
+Manual triage:
+1. Check Cloudflare Workers dashboard for error spike.
+2. \`npx wrangler tail\` to stream live logs.
+3. If wedge is in code: \`npx wrangler rollback\` (see docs/deployment.md §8).
+
+Close this issue once the probe is green again."
