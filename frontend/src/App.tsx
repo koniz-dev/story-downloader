@@ -41,6 +41,7 @@ export function App() {
   const isInitialMount = useRef(true);
   const urlFormRef = useRef<HTMLElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (platform) localStorage.setItem(STORAGE_KEY, platform);
@@ -74,6 +75,18 @@ export function App() {
     });
     return () => window.cancelAnimationFrame(handle);
   }, [result]);
+
+  // Same behavior for error: an error alert that renders below the fold is
+  // worthless — the user clicks Download, sees nothing change, and assumes
+  // the app froze. Scroll into view only when not already visible.
+  useEffect(() => {
+    if (!error) return;
+    const handle = window.requestAnimationFrame(() => {
+      const headerHeight = document.querySelector('header')?.offsetHeight ?? 80;
+      scrollIntoView(errorRef.current, { offsetTop: headerHeight + 12 });
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [error]);
 
   function handlePlatformChange(p: Platform) {
     setPlatform(p);
@@ -200,57 +213,64 @@ export function App() {
               />
             </section>
 
+            {/* Feedback blocks live immediately under the form they belong
+                to, NOT at the end of <main>. Putting them after the guide
+                hid the error/result below the fold on every viewport once
+                the guide expanded — users clicked Download and saw nothing
+                change. */}
+            {error && (
+              <div ref={errorRef} className="scroll-mt-24">
+                <ErrorAlert
+                  message={error.message}
+                  code={error.code}
+                  requestId={error.requestId}
+                  onDismiss={() => setError(null)}
+                />
+              </div>
+            )}
+
+            {loading && !result && (
+              <section className="space-y-3" aria-live="polite" aria-busy="true">
+                <span className="sr-only">{t.result.loading}</span>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+                  <MediaCardSkeleton index={0} />
+                  <MediaCardSkeleton index={1} />
+                </div>
+              </section>
+            )}
+
+            {result && result.mediaItems.length > 0 && (
+              <section ref={resultsRef} className="space-y-3 scroll-mt-24">
+                <ResultsHeader
+                  platform={result.platform}
+                  kind={result.kind}
+                  count={result.mediaItems.length}
+                  onDownloadAll={result.mediaItems.length > 1 ? handleDownloadAll : undefined}
+                />
+                {result.degraded && (
+                  <div className="rounded-lg bg-warning/10 border border-warning/30 px-3 py-2">
+                    <p className="text-xs text-warning">⚠ {t.result.degraded}</p>
+                  </div>
+                )}
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+                  {result.mediaItems.map((item, i) => (
+                    <MediaCard
+                      key={`${item.url}-${i}`}
+                      item={item}
+                      platform={result.platform}
+                      kind={result.kind}
+                      index={i}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section className="space-y-3">
               <StepHeader step={3} label={t.steps.guide} state="pending" />
               <CollapsibleGuide platform={platform} />
             </section>
           </>
-        )}
-
-        {error && (
-          <ErrorAlert
-            message={error.message}
-            code={error.code}
-            requestId={error.requestId}
-            onDismiss={() => setError(null)}
-          />
-        )}
-
-        {loading && !result && (
-          <section className="space-y-3" aria-live="polite" aria-busy="true">
-            <span className="sr-only">{t.result.loading}</span>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
-              <MediaCardSkeleton index={0} />
-              <MediaCardSkeleton index={1} />
-            </div>
-          </section>
-        )}
-
-        {result && result.mediaItems.length > 0 && (
-          <section ref={resultsRef} className="space-y-3 scroll-mt-24">
-            <ResultsHeader
-              platform={result.platform}
-              kind={result.kind}
-              count={result.mediaItems.length}
-              onDownloadAll={result.mediaItems.length > 1 ? handleDownloadAll : undefined}
-            />
-            {result.degraded && (
-              <div className="rounded-lg bg-warning/10 border border-warning/30 px-3 py-2">
-                <p className="text-xs text-warning">⚠ {t.result.degraded}</p>
-              </div>
-            )}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
-              {result.mediaItems.map((item, i) => (
-                <MediaCard
-                  key={`${item.url}-${i}`}
-                  item={item}
-                  platform={result.platform}
-                  kind={result.kind}
-                  index={i}
-                />
-              ))}
-            </div>
-          </section>
         )}
       </main>
 
