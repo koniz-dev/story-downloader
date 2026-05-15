@@ -19,7 +19,7 @@ jobs:
 
       # NOTE: tag-pinned for initial commit. Dependabot will SHA-pin on its
       # next github-actions run to match the existing pin style.
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
