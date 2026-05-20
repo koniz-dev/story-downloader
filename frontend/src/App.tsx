@@ -194,7 +194,7 @@ export function App() {
     } catch (e) {
       const { message, code, requestId } = resolveErrorMessage(e);
       setError({ message, code, requestId });
-      track({ event: 'resolve.fail', platform, code, ms: Date.now() - started });
+      track({ event: 'resolve.fail', platform, code, ms: Date.now() - started, requestId });
     } finally {
       setLoading(false);
     }
@@ -242,7 +242,7 @@ export function App() {
       } catch (e) {
         failed++;
         const { message, code, requestId } = resolveErrorMessage(e);
-        track({ event: 'resolve.fail', platform: rowPlatform, code, ms: Date.now() - started });
+        track({ event: 'resolve.fail', platform: rowPlatform, code, ms: Date.now() - started, requestId });
         setRows((prev) =>
           prev.map((r, idx) =>
             idx === i ? { url, status: 'error', message, code, requestId } : r,
