@@ -28,6 +28,42 @@ export function detectFacebookKind(url: URL): ContentKind | null {
   return null;
 }
 
+// 1-hour cache for successful resolves. FB serves a stub OG page (~4 KB,
+// `og:image` only) probabilistically: testing shows ~40% of anonymous
+// Worker requests get a real OG page, the rest get an empty stub. Caching
+// the lucky-fetch shifts win-rate per-URL toward 100% after the first
+// successful resolve. og:image URLs carry a signed `oe=` expiry that's
+// typically 24h+, so 1h is comfortably inside the validity window.
+// Privacy note: og:image URLs are public CDN URLs with no user identity —
+// safe to share across callers (unlike TikTok cookies which we scope per-IP).
+const FB_RESOLVE_CACHE_TTL_S = 3600;
+// Per-URL tracking params FB injects to attribute clicks back to the user
+// who shared the link. They don't affect resolved media, so strip from the
+// cache key to maximise hits across users referencing the same post.
+const FB_TRACKING_PARAM_PREFIXES = ['__cft__', '__tn__', '__xts__', 'fbclid'];
+
+export function normalizeFacebookCacheKey(rawUrl: string): string | null {
+  try {
+    const u = new URL(rawUrl);
+    u.hash = '';
+    for (const key of [...u.searchParams.keys()]) {
+      if (FB_TRACKING_PARAM_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+        u.searchParams.delete(key);
+      }
+    }
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+function cacheRequestForFb(normalizedUrl: string): Request {
+  return new Request(
+    `https://fb-cache.local/resolve/${encodeURIComponent(normalizedUrl)}`,
+    { method: 'GET' },
+  );
+}
+
 export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   const url = new URL(rawUrl);
   const initialKind = detectFacebookKind(url);
@@ -36,6 +72,22 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
       'Invalid Facebook URL. Supported: Post (/<page>/posts/<id>), Video (/<page>/videos/<id> or /watch?v=<id>), Reel (/reel/<id>), share link (/share/<token>), fb.watch.',
       'INVALID_FACEBOOK_URL',
     );
+  }
+
+  const normalized = normalizeFacebookCacheKey(rawUrl);
+  const cache = (globalThis as { caches?: CacheStorage }).caches?.default;
+  // Cache lookup before any upstream fetch — a hit dodges FB's anti-bot
+  // lottery entirely.
+  if (normalized && cache) {
+    try {
+      const hit = await cache.match(cacheRequestForFb(normalized));
+      if (hit) {
+        const cached = (await hit.json()) as ResolveResult | null;
+        if (cached?.mediaItems && cached.mediaItems.length > 0) return cached;
+      }
+    } catch {
+      // Cache read is best-effort; fall through to a fresh fetch.
+    }
   }
 
   const { html, finalUrl } = await fetchHtml(rawUrl, initialKind);
@@ -55,7 +107,24 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
-  return { platform: 'facebook', kind, mediaItems: items };
+  const result: ResolveResult = { platform: 'facebook', kind, mediaItems: items };
+
+  // Only cache success — never poison the cache with an empty result.
+  if (normalized && cache) {
+    try {
+      const cacheRes = new Response(JSON.stringify(result), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': `max-age=${FB_RESOLVE_CACHE_TTL_S}`,
+        },
+      });
+      await cache.put(cacheRequestForFb(normalized), cacheRes);
+    } catch {
+      // Cache write is best-effort; never block the response on it.
+    }
+  }
+
+  return result;
 }
 
 async function fetchHtml(url: string, kind: ContentKind): Promise<{ html: string; finalUrl: string }> {

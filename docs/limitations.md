@@ -50,6 +50,26 @@ When the parser starts failing across the board, the fix lives in
 [`worker/src/platforms/`](../worker/src/platforms). Open an issue with the URL
 that broke and the error code so it can be reproduced.
 
+## Facebook multi-image posts only return the cover image
+
+For posts with multiple images (carousels), only the first/cover image is
+returned. The anonymous HTML Facebook serves to a non-logged-in client (the
+shape this worker scrapes) carries exactly one `og:image` meta tag; the rest
+of the carousel only renders after Facebook's React app boots in the
+browser. Extracting the full carousel would require running a headless
+browser, which is out of scope for a Cloudflare Worker.
+
+## Facebook serves probabilistic stub pages
+
+Anonymous, Worker-IP fetches against Facebook see a stub OG-only page
+roughly 40% of the time and a `FACEBOOK_NO_MEDIA` 422 the rest. This is
+Facebook's anti-bot system rotating between full and stub HTML based on IP
+reputation / rate. To mitigate, the worker caches the *first* successful
+resolve per URL in `caches.default` for an hour — so once any caller wins
+the FB lottery for a given URL, every subsequent request hits the cache and
+returns immediately. Cold-URL behaviour remains a coin flip; retry usually
+works.
+
 ## What the proxy will *not* do
 
 `/api/proxy` is restricted to `*.cdninstagram.com`, `*.fbcdn.net`,

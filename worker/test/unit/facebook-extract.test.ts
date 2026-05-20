@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { extractFromHtml, reconcileKind, unescapeJson } from '../../src/platforms/facebook';
+import {
+  extractFromHtml,
+  normalizeFacebookCacheKey,
+  reconcileKind,
+  unescapeJson,
+} from '../../src/platforms/facebook';
 
 describe('extractFromHtml (facebook)', () => {
   it('og:video meta → single video item with og:image as thumbnail', () => {
@@ -168,5 +173,38 @@ describe('reconcileKind (facebook)', () => {
     const initial = new URL('https://www.facebook.com/share/v/AbCdEf/');
     const finalUrl = 'https://www.facebook.com/somepage/videos/1234567890';
     expect(reconcileKind(initial, finalUrl, 'video')).toBe('video');
+  });
+});
+
+describe('normalizeFacebookCacheKey', () => {
+  it('strips per-user attribution params so two callers share a cache entry', () => {
+    const a =
+      'https://www.facebook.com/u/posts/pfbidABC?__cft__[0]=AZxxxAAA&__tn__=%2CO%2CP-R';
+    const b =
+      'https://www.facebook.com/u/posts/pfbidABC?__cft__[0]=AZyyyBBB&__tn__=%2CO';
+    expect(normalizeFacebookCacheKey(a)).toBe(normalizeFacebookCacheKey(b));
+  });
+
+  it('also strips fbclid and __xts__', () => {
+    const n = normalizeFacebookCacheKey(
+      'https://www.facebook.com/u/posts/pfbidABC?fbclid=IwAR123&__xts__[0]=abc',
+    );
+    expect(n).toBe('https://www.facebook.com/u/posts/pfbidABC');
+  });
+
+  it('preserves substantive query params (story_fbid, v, etc.)', () => {
+    const n = normalizeFacebookCacheKey(
+      'https://www.facebook.com/story.php?story_fbid=1&id=2&__cft__[0]=AZxxx',
+    );
+    expect(n).toBe('https://www.facebook.com/story.php?story_fbid=1&id=2');
+  });
+
+  it('drops hash fragment', () => {
+    const n = normalizeFacebookCacheKey('https://www.facebook.com/u/posts/abc#anchor');
+    expect(n).toBe('https://www.facebook.com/u/posts/abc');
+  });
+
+  it('returns null for unparseable input', () => {
+    expect(normalizeFacebookCacheKey('not-a-url')).toBeNull();
   });
 });
