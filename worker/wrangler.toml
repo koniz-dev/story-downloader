@@ -1,6 +1,6 @@
 name = "story-dl-worker"
 main = "src/index.ts"
-compatibility_date = "2024-11-20"
+compatibility_date = "2026-01-15"
 compatibility_flags = ["nodejs_compat"]
 
 # Allowed origins for CORS — comma-separated, no spaces. Supports `*` glob
