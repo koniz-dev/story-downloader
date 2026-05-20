@@ -42,6 +42,11 @@ describe('detectFacebookKind', () => {
     ['https://www.facebook.com/anything?story_fbid=1&id=2', 'post'],
     ['https://www.facebook.com/stories/1234567890', 'story'],
     ['https://fb.watch/AbCd/', 'video'],
+    ['https://www.facebook.com/share/1EkDv4S7Bw/', 'post'],
+    ['https://www.facebook.com/share/v/AbCdEf/', 'video'],
+    ['https://www.facebook.com/share/r/AbCdEf/', 'reel'],
+    ['https://www.facebook.com/share/p/AbCdEf/', 'post'],
+    ['https://www.facebook.com/share/s/AbCdEf/', 'story'],
   ])('%s → %s', (href, expected) => {
     expect(detectFacebookKind(u(href))).toBe(expected);
   });
@@ -50,6 +55,7 @@ describe('detectFacebookKind', () => {
     'https://www.facebook.com/',
     'https://www.facebook.com/marketplace/',
     'https://www.facebook.com/watch', // no v= param
+    'https://www.facebook.com/share/', // empty share token
   ])('null for unsupported %s', (href) => {
     expect(detectFacebookKind(u(href))).toBeNull();
   });

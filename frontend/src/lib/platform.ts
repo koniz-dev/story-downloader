@@ -51,6 +51,14 @@ export function detectKind(rawUrl: string, platform: Platform): ContentKind | nu
   if (/\/posts\/[^/]+/i.test(p)) return 'post';
   if (p.startsWith('/story.php') || url.searchParams.has('story_fbid')) return 'post';
   if (/^\/stories\/\d+/i.test(p)) return 'story';
+  // Universal share links (/share/v/, /share/r/, /share/p/, /share/s/, /share/<opaque>).
+  // The token is opaque until the server follows the redirect, so an unprefixed
+  // /share/<token> is optimistically tagged 'post' — same pattern as TikTok /t/.
+  if (/^\/share\/v\/[^/]+/i.test(p)) return 'video';
+  if (/^\/share\/r\/[^/]+/i.test(p)) return 'reel';
+  if (/^\/share\/p\/[^/]+/i.test(p)) return 'post';
+  if (/^\/share\/s\/[^/]+/i.test(p)) return 'story';
+  if (/^\/share\/[^/]+/i.test(p)) return 'post';
   if (url.hostname === 'fb.watch' || url.hostname.endsWith('.fb.watch')) return 'video';
   return null;
 }

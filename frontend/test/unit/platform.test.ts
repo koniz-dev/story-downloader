@@ -58,6 +58,11 @@ describe('detectKind — facebook', () => {
     ['https://www.facebook.com/story.php?story_fbid=1&id=2', 'post'],
     ['https://www.facebook.com/stories/123', 'story'],
     ['https://fb.watch/AbCd/', 'video'],
+    ['https://www.facebook.com/share/1EkDv4S7Bw/', 'post'],
+    ['https://www.facebook.com/share/v/AbCdEf/', 'video'],
+    ['https://www.facebook.com/share/r/AbCdEf/', 'reel'],
+    ['https://www.facebook.com/share/p/AbCdEf/', 'post'],
+    ['https://www.facebook.com/share/s/AbCdEf/', 'story'],
   ])('%s → %s', (url, expected) => {
     expect(detectKind(url, 'facebook')).toBe(expected);
   });

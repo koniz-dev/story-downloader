@@ -17,6 +17,13 @@ export function detectFacebookKind(url: URL): ContentKind | null {
   if (/^\/posts\/[^/]+/i.test(p)) return 'post';
   if (p.startsWith('/story.php') || url.searchParams.has('story_fbid')) return 'post';
   if (/^\/stories\/\d+/i.test(p)) return 'story';
+  // Universal share links. /share/<opaque> resolves via redirect server-side;
+  // tag as 'post' optimistically and let fetch follow the redirect.
+  if (/^\/share\/v\/[^/]+/i.test(p)) return 'video';
+  if (/^\/share\/r\/[^/]+/i.test(p)) return 'reel';
+  if (/^\/share\/p\/[^/]+/i.test(p)) return 'post';
+  if (/^\/share\/s\/[^/]+/i.test(p)) return 'story';
+  if (/^\/share\/[^/]+/i.test(p)) return 'post';
   if (url.hostname === 'fb.watch' || url.hostname.endsWith('.fb.watch')) return 'video';
   return null;
 }
@@ -26,7 +33,7 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   const kind = detectFacebookKind(url);
   if (!kind) {
     throw new ResolveError(
-      'Invalid Facebook URL. Supported: Post (/<page>/posts/<id>), Video (/<page>/videos/<id> or /watch?v=<id>), Reel (/reel/<id>), fb.watch.',
+      'Invalid Facebook URL. Supported: Post (/<page>/posts/<id>), Video (/<page>/videos/<id> or /watch?v=<id>), Reel (/reel/<id>), share link (/share/<token>), fb.watch.',
       'INVALID_FACEBOOK_URL',
     );
   }
