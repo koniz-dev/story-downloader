@@ -36,20 +36,17 @@ Use `- [~]` for in-progress. Within each epic, list open items first
 
 ## TikTok
 
-- [ ] **P1** Cache TikTok page fetch (~30s by URL hash) — resolve fetches page, proxy re-fetches same page on download. Doubles CF egress per download. `worker/src/proxy.ts:96`.
-- [ ] **P2** Iterate `urlList` fully in `extractPhotoItems` — currently only tries `[0]` then `[1]`; slideshows with extra CDN variants may return fewer images. `worker/src/platforms/tiktok.ts:273-275`.
-- [ ] **P2** Test the `proxyPageUrl` redirect-mismatch fallback — logic has regressed twice per git history. `worker/src/platforms/tiktok.ts:198-210`.
+- [x] **P1** Cache TikTok page fetch (~30s by URL hash) — shipped 2026-05-20; `fetchTikTokPageCached` wraps `fetchTikTokPage`, caches `{html, finalUrl, cookies}` at `tt-cache.local/page/<encoded>`, halves egress per download.
+- [x] **P2** Iterate `urlList` fully in `extractPhotoItems` — shipped 2026-05-20; new `pickFirstUsableUrl` picks the first `https://` entry; 3 test cases added.
+- [x] **P2** Test the `proxyPageUrl` redirect-mismatch fallback — shipped 2026-05-20; extracted `chooseProxyPageUrl(input, finalUrl)` + 6 test cases covering WAF/about, unparseable, off-platform, empty-username regressions.
 
 ## Core
 
 Worker runtime, frontend shell, i18n, build/CI, tooling. Anything not tied to
 a single platform.
 
-- [ ] **P1** "Download all" affordance in bulk mode — user pastes 20 URLs, has to click 20 individual downloads. `frontend/src/App.tsx:374-380`.
 - [ ] **P1** Wire `track()` to a real sink or remove dead events — `resolve.fail`/`bulk.complete` etc. are designed to aggregate but only `console.log`. `frontend/src/lib/track.ts:11`.
-- [ ] **P1** Memoize `proxyUrl(item.url)` in `MediaCard` — called twice per render (poster + video src), risks double-fetch if the worker doesn't dedupe. `frontend/src/components/MediaCard.tsx`.
 - [ ] **P1** Tests for `lib/download.ts`, `lib/api.ts` (ApiError + requestId fallback), and `lib/theme/index.ts` (meta-tag swap) — non-presentational code with real branching. `frontend/test/unit/`.
-- [ ] **P1** Drop hardcoded GitHub Pages origin from `ALLOWED_ORIGINS` (or document fork override) — wildcard `*.github.io` in `DEFAULT_ALLOWED` is never reached; forks silently fail CORS. `worker/wrangler.toml:9`.
 - [ ] **P2** `Cache-Control` on `/api/health` and `/api/version` — every probe is a cold round-trip; 30s `s-maxage` lets the CF edge serve. `worker/src/index.ts`.
 - [ ] **P2** Forward `Content-Range`/`Accept-Ranges` in `proxyMedia` — large videos can't resume; only `Content-Length` is preserved today. `worker/src/proxy.ts:162-167`.
 - [ ] **P2** Bump `compatibility_date` in `wrangler.toml` — `2024-11-20` is ~18 months stale; missing recent runtime features. `worker/wrangler.toml:3`.
@@ -58,6 +55,9 @@ a single platform.
 - [ ] **P2** Include `requestId` in `track.ts` events — frontend logs can't correlate with worker structured logs. `frontend/src/lib/track.ts:5`.
 - [ ] **P2** Belt-and-braces: assert `request.cf` presence before trusting `cf-connecting-ip` — CF strips spoofed header at the edge so safe today, but defense-in-depth. `worker/src/rate-limit.ts:22`.
 
+- [x] **P1** "Download all" affordance in bulk mode — shipped 2026-05-20; button appears when ≥2 successful rows, reuses 250ms stagger from single-mode handleDownloadAll.
+- [x] **P1** Memoize `proxyUrl(item.url)` in `MediaCard` — shipped 2026-05-20; one `useMemo` keyed on `item.url`, both poster + video src reuse the same string.
+- [x] **P1** Drop hardcoded GitHub Pages origin from `ALLOWED_ORIGINS` — shipped 2026-05-20; added `https://*.github.io` wildcard to env var (CORS already supported `*` globs in `worker/src/cors.ts`, just had to use them).
 - [x] **P2** Dark / light / system theme toggle — shipped 2026-05-20 (reconciled; full impl already in `lib/theme` + `ThemeToggle`).
 - [x] **P2** Bulk download from multiple URLs — shipped 2026-05-20; mode toggle on the form, sequential resolve with 500ms politeness gap, per-URL result rows.
 - [x] **P2** PWA + mobile share-target — shipped 2026-05-20; web manifest with `share_target`, URL pre-fill on launch via `readShareTargetUrl()`, query-string stripped via `history.replaceState`.
