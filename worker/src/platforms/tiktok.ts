@@ -42,6 +42,22 @@ export function isTikTokPageUrl(url: URL): boolean {
   return false;
 }
 
+// The proxy re-fetches this URL, so it must round-trip back through
+// isTikTokPageUrl. Some redirects land on canonical-but-unparseable forms
+// (e.g. m.tiktok.com/v/<id> -> www.tiktok.com/@/video/<id>?_r=1 with an
+// empty username); fall back to the original input in those cases. This
+// helper has regressed twice in git history, so it lives as a named pure
+// function with its own tests.
+export function chooseProxyPageUrl(input: string, finalUrl: string): string {
+  let finalUrlObj: URL;
+  try {
+    finalUrlObj = new URL(finalUrl);
+  } catch {
+    return input;
+  }
+  return isTikTokPageUrl(finalUrlObj) ? finalUrl : input;
+}
+
 export interface TikTokFetchResult {
   html: string;
   finalUrl: string;
@@ -271,11 +287,7 @@ export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
   }
   const kind: ContentKind = detectTikTokKind(finalUrlObj) ?? earlyKind ?? 'video';
 
-  // The proxy re-fetches this URL, so it must round-trip back through
-  // isTikTokPageUrl. Some redirects land on canonical-but-unparseable forms
-  // (e.g. m.tiktok.com/v/<id> → www.tiktok.com/@/video/<id>?_r=1 with an
-  // empty username); fall back to the original input in those cases.
-  const proxyPageUrl = isTikTokPageUrl(finalUrlObj) ? finalUrl : rawUrl;
+  const proxyPageUrl = chooseProxyPageUrl(rawUrl, finalUrl);
 
   const itemStruct = parseTikTokItemStruct(html);
   if (!itemStruct) {

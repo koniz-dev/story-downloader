@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { detectInstagramKind } from '../../src/platforms/instagram';
 import { detectFacebookKind } from '../../src/platforms/facebook';
 import {
+  chooseProxyPageUrl,
   detectTikTokKind,
   extractPhotoItems,
   isTikTokPageUrl,
@@ -155,6 +156,44 @@ describe('extractPhotoItems', () => {
     expect(items).toEqual([
       { type: 'image', url: 'https://ok.tiktokcdn.com/x.jpg' },
     ]);
+  });
+});
+
+describe('chooseProxyPageUrl', () => {
+  it('uses finalUrl when it matches the input URL', () => {
+    const u = 'https://www.tiktok.com/@user/video/1234567890';
+    expect(chooseProxyPageUrl(u, u)).toBe(u);
+  });
+
+  it('uses finalUrl when redirect lands on a different host but still a TikTok page', () => {
+    const input = 'https://vm.tiktok.com/ABCxyz/';
+    const finalUrl = 'https://www.tiktok.com/@user/video/1234567890';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(finalUrl);
+  });
+
+  it('falls back to input when finalUrl is the regional WAF/about fallback page', () => {
+    // Detection upstream throws TIKTOK_RATE_LIMITED for /hk/about, but if the
+    // signal ever drifts we still must not point the proxy at the about page.
+    const input = 'https://www.tiktok.com/@user/video/1234567890';
+    const finalUrl = 'https://www.tiktok.com/hk/about';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
+  });
+
+  it('falls back to input when finalUrl is canonical-but-unparseable (empty username)', () => {
+    const input = 'https://m.tiktok.com/v/1234567890';
+    const finalUrl = 'https://www.tiktok.com/@/video/1234567890?_r=1';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
+  });
+
+  it('falls back to input when finalUrl is unparseable', () => {
+    const input = 'https://www.tiktok.com/@user/video/1234567890';
+    expect(chooseProxyPageUrl(input, 'not a url')).toBe(input);
+  });
+
+  it('falls back to input when finalUrl is off-platform', () => {
+    const input = 'https://www.tiktok.com/@user/video/1234567890';
+    const finalUrl = 'https://www.example.com/blocked';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
   });
 });
 
