@@ -152,6 +152,22 @@ function decodeHtml(s: string): string {
   });
 }
 
-function unescapeJson(s: string): string {
-  return s.replace(/\\\//g, '/').replace(/\\u0026/g, '&');
+export function unescapeJson(s: string): string {
+  // Single-pass tokenizer: a sequential .replace() chain risks letting a later
+  // step re-consume an earlier step's output (e.g. \\ -> \ followed by \/ -> /
+  // would turn a literal "\\/" into "/"). One regex over all escape forms
+  // means each source character is decoded at most once.
+  return s.replace(/\\u0026|\\u002[fF]|\\u003[dD]|\\\/|\\"|\\\\/g, (m) => {
+    switch (m) {
+      case '\\u0026': return '&';
+      case '\\u002f':
+      case '\\u002F': return '/';
+      case '\\u003d':
+      case '\\u003D': return '=';
+      case '\\/': return '/';
+      case '\\"': return '"';
+      case '\\\\': return '\\';
+      default: return m;
+    }
+  });
 }
