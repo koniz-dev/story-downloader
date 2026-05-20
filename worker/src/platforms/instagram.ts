@@ -27,13 +27,22 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
+  if (kind === 'story') {
+    // Anonymous IG story fetches almost never succeed (see docs/limitations.md);
+    // skip the upstream round-trip and surface the same error the items-empty
+    // path would have produced.
+    throw new ResolveError(
+      'Could not extract media. Instagram stories usually require login — only a few public stories work anonymously.',
+      'INSTAGRAM_STORY_BLOCKED',
+      422,
+    );
+  }
+
   let items: MediaItem[] = [];
 
-  if (kind !== 'story') {
-    const shortcode = extractShortcode(url);
-    if (shortcode) {
-      items = await tryEmbed(shortcode, kind);
-    }
+  const shortcode = extractShortcode(url);
+  if (shortcode) {
+    items = await tryEmbed(shortcode, kind);
   }
 
   if (items.length === 0) {
@@ -46,10 +55,8 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
     // playable media in it. The endpoint and the post both exist; the
     // request is just unprocessable. See same rationale in tiktok.ts.
     throw new ResolveError(
-      kind === 'story'
-        ? 'Could not extract media. Instagram stories usually require login — only a few public stories work anonymously.'
-        : 'Could not extract media. The post may be private or the page structure has changed.',
-      kind === 'story' ? 'INSTAGRAM_STORY_BLOCKED' : 'INSTAGRAM_NO_MEDIA',
+      'Could not extract media. The post may be private or the page structure has changed.',
+      'INSTAGRAM_NO_MEDIA',
       422,
     );
   }
@@ -98,7 +105,7 @@ async function tryEmbed(shortcode: string, kind: ContentKind): Promise<MediaItem
   return parseEmbed(html);
 }
 
-function parseEmbed(html: string): MediaItem[] {
+export function parseEmbed(html: string): MediaItem[] {
   const items: MediaItem[] = [];
 
   const videoMatch = html.match(/"video_url":"([^"]+)"/);
@@ -160,7 +167,7 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
   return await readBoundedText(res, MAX_HTML_BYTES);
 }
 
-function extractFromHtml(html: string): MediaItem[] {
+export function extractFromHtml(html: string): MediaItem[] {
   const items: MediaItem[] = [];
 
   const videoUrl = matchMeta(html, 'og:video') ?? matchMeta(html, 'og:video:secure_url');
