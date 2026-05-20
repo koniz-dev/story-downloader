@@ -3,7 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2024-11-20"
 compatibility_flags = ["nodejs_compat"]
 
-# Allowed origins for CORS — phẩy nhau, không có khoảng trắng.
-# Đổi thành domain GitHub Pages của bạn sau khi deploy.
+# Allowed origins for CORS — comma-separated, no spaces. Supports `*` glob
+# patterns (see worker/src/cors.ts). The `https://*.github.io` entry lets
+# any fork's GitHub Pages origin work without editing this file; replace or
+# extend with a custom domain if you serve the frontend from somewhere else.
 [vars]
-ALLOWED_ORIGINS = "http://localhost:5173,https://koniz-dev.github.io"
+ALLOWED_ORIGINS = "http://localhost:5173,https://*.github.io,https://koniz-dev.github.io"
