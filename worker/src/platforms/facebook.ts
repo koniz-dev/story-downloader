@@ -98,7 +98,7 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
   return await readBoundedText(res, MAX_HTML_BYTES);
 }
 
-function extractFromHtml(html: string): MediaItem[] {
+export function extractFromHtml(html: string): MediaItem[] {
   const items: MediaItem[] = [];
 
   const videoUrl = matchMeta(html, 'og:video') ?? matchMeta(html, 'og:video:secure_url');
