@@ -10,3 +10,11 @@ compatibility_flags = ["nodejs_compat"]
 # your custom domain).
 [vars]
 ALLOWED_ORIGINS = "http://localhost:5173,https://koniz-dev.github.io"
+
+# Analytics Engine sink. The binding name (AE) must match `env.AE` in the
+# Worker code and the schema documented at the top of src/analytics.ts.
+# Schema is positional — append new blob/double fields at the end, never
+# reorder existing ones, or SQL aggregations will silently shift columns.
+[[analytics_engine_datasets]]
+binding = "AE"
+dataset = "story_dl_track"

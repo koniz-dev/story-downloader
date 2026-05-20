@@ -7,12 +7,15 @@ import { corsHeaders, handlePreflight } from './cors';
 import { checkRateLimit } from './rate-limit';
 import { applySecurityHeaders, getOrCreateRequestId, setRequestId } from './headers';
 import { SERVICE_NAME, SERVICE_VERSION, uptimeSeconds } from './version';
+import { validateTrackPayload, writeTrack } from './analytics';
 import { ResolveError, type Env, type Platform } from './types';
 
 // Cap the /api/resolve body. A platform URL fits comfortably in 2 KB; 8 KB
 // gives slack for unusual short-link expansions while still rejecting
 // adversarial oversized POSTs before we try to JSON-parse them.
 const MAX_RESOLVE_BODY_BYTES = 8 * 1024;
+// Telemetry events carry only a small key/value bag — 2 KB is plenty.
+const MAX_TRACK_BODY_BYTES = 2 * 1024;
 
 const router = Router();
 
@@ -115,6 +118,26 @@ router.get('/api/proxy', async (request: Request, _env: Env, ctx: RequestContext
   return await proxyMedia(target, filename, request);
 });
 
+router.post('/api/track', async (request: Request, env: Env) => {
+  await checkRateLimit(request, '/api/track');
+  const lenHeader = request.headers.get('Content-Length');
+  if (lenHeader) {
+    const len = Number.parseInt(lenHeader, 10);
+    if (Number.isFinite(len) && len > MAX_TRACK_BODY_BYTES) {
+      throw new ResolveError(
+        `Track body exceeds ${MAX_TRACK_BODY_BYTES} bytes`,
+        'BODY_TOO_LARGE',
+        413,
+        { limit: MAX_TRACK_BODY_BYTES, length: len },
+      );
+    }
+  }
+  const raw = await request.json().catch(() => null);
+  const payload = validateTrackPayload(raw);
+  writeTrack(env, payload);
+  return new Response(null, { status: 204 });
+});
+
 // 405 fallbacks for known paths — without these, a GET /api/resolve falls
 // through to the catch-all 404 below, which is misleading. RFC 7231 requires
 // 405 with an Allow header listing supported methods.
@@ -122,6 +145,7 @@ router.all('/api/resolve', () => methodNotAllowed('POST'));
 router.all('/api/proxy', () => methodNotAllowed('GET'));
 router.all('/api/health', () => methodNotAllowed('GET'));
 router.all('/api/version', () => methodNotAllowed('GET'));
+router.all('/api/track', () => methodNotAllowed('POST'));
 
 router.all('*', () => error(404, 'Not Found'));
 

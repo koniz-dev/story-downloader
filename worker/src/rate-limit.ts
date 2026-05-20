@@ -14,6 +14,10 @@ interface Limit {
 const ROUTE_LIMITS: Record<string, Limit> = {
   '/api/resolve': { windowMs: 60_000, max: 30 },
   '/api/proxy': { windowMs: 60_000, max: 60 },
+  // Telemetry is high-frequency by design (one event per UI action). A real
+  // user fires ~5-15 events per session; 120/min/IP caps abuse without
+  // clipping legitimate bursts (e.g. bulk download of many URLs).
+  '/api/track': { windowMs: 60_000, max: 120 },
 };
 
 export async function checkRateLimit(request: Request, route: string): Promise<void> {

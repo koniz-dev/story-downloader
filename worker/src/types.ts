@@ -23,6 +23,9 @@ export interface Env {
   // Optional metadata injected at deploy time (see deploy-worker.yml).
   BUILD_COMMIT?: string;
   BUILD_AT?: string;
+  // Optional Analytics Engine sink for /api/track. Optional so local dev
+  // (and tests that don't bind it) degrade silently rather than 5xx.
+  AE?: AnalyticsEngineDataset;
 }
 
 export class ResolveError extends Error {
