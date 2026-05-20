@@ -223,7 +223,12 @@ function errorResponse(
   const isResolveErr = e instanceof ResolveError;
   const status = isResolveErr ? e.status : 500;
   const code = isResolveErr ? e.code : 'INTERNAL';
-  const message = isResolveErr ? e.message : e instanceof Error ? e.message : 'Internal error';
+  // ResolveError messages are authored by us and known to be safe to
+  // expose. Anything else is an uncaught runtime error and may contain
+  // code-structure detail ("Cannot read properties of undefined ..."),
+  // file paths, or other internals — redact to a generic string and rely
+  // on the worker log + requestId to debug.
+  const message = isResolveErr ? e.message : 'Internal error';
   const params = isResolveErr ? e.params : undefined;
   const body = JSON.stringify({ error: message, code, params, requestId });
   const headers = new Headers({ 'Content-Type': 'application/json' });
@@ -248,9 +253,14 @@ export default {
       const response = await router.fetch(request, env, ctx);
       return decorateResponse(response, requestId, cors);
     } catch (e) {
+      // Log path+method only — the inbound URL on /api/proxy carries the
+      // proxied CDN URL in its query string, which references user content.
+      // Admin-only logs today, but redacting up front keeps the surface
+      // clean if logs ever land in a third-party SIEM.
+      const inboundUrl = new URL(request.url);
       logEvent('request.error', {
         requestId,
-        url: request.url,
+        path: inboundUrl.pathname,
         method: request.method,
         code: e instanceof ResolveError ? e.code : 'INTERNAL',
         message: e instanceof Error ? e.message : String(e),
