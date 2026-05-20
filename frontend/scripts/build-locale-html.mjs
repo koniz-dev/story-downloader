@@ -93,13 +93,27 @@ function buildHead(locale, viteAssets) {
   // dist/<locale>/index.html and need `../`.
   const rootRel = locale === DEFAULT_LOCALE ? './' : '../';
 
-  // Defence-in-depth CSP. The worker URL is locked to a fixed origin; OG
-  // images / favicons are same-origin. Tailwind requires 'unsafe-inline' for
-  // style attributes generated at runtime — there is no equivalent for scripts.
-  // `frame-ancestors`, `sandbox`, and `report-uri` are intentionally omitted:
-  // CSP delivered via <meta> can't carry them (the browser warns and ignores).
-  // Setting them via response header isn't possible on GitHub Pages.
-  const workerOrigin = 'https://story-dl-worker.koniz-dev.workers.dev';
+  // Defence-in-depth CSP. The worker origin is read from VITE_WORKER_URL so
+  // it follows whichever worker the build actually points at — forks with a
+  // different workers.dev account or a custom domain don't need to patch this
+  // file. Falls back to the primary deployment for local builds with no env
+  // var configured. OG images / favicons are same-origin. Tailwind requires
+  // 'unsafe-inline' for style attributes generated at runtime — no script
+  // equivalent. `frame-ancestors`, `sandbox`, and `report-uri` are
+  // intentionally omitted: CSP delivered via <meta> can't carry them (browser
+  // warns and ignores), and setting them via response header isn't possible
+  // on GitHub Pages.
+  const workerOrigin = (() => {
+    const env = process.env.VITE_WORKER_URL;
+    if (env) {
+      try {
+        return new URL(env).origin;
+      } catch {
+        // ignore — malformed env, fall through to default
+      }
+    }
+    return 'https://story-dl-worker.koniz-dev.workers.dev';
+  })();
   const csp = [
     "default-src 'self'",
     "script-src 'self'",
