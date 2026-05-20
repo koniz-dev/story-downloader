@@ -65,6 +65,12 @@ export function validateTrackPayload(raw: unknown): TrackPayload {
 }
 
 export function writeTrack(env: Env, p: TrackPayload): void {
+  // writeDataPoint() is fire-and-forget on the runtime: it queues a data
+  // point into the isolate's outbound batch and returns synchronously. The
+  // CF runtime flushes the batch before evicting the isolate, so calling
+  // this before sending the response is sufficient — there is no Promise to
+  // await and ctx.waitUntil() doesn't help. Treat dropped writes as
+  // best-effort; the dashboard is for trend signal, not exact counts.
   env.AE?.writeDataPoint({
     indexes: [p.event],
     blobs: [
