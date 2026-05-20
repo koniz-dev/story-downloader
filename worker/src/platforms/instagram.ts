@@ -105,7 +105,7 @@ async function tryEmbed(shortcode: string, kind: ContentKind): Promise<MediaItem
   return parseEmbed(html);
 }
 
-function parseEmbed(html: string): MediaItem[] {
+export function parseEmbed(html: string): MediaItem[] {
   const items: MediaItem[] = [];
 
   const videoMatch = html.match(/"video_url":"([^"]+)"/);
@@ -167,7 +167,7 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
   return await readBoundedText(res, MAX_HTML_BYTES);
 }
 
-function extractFromHtml(html: string): MediaItem[] {
+export function extractFromHtml(html: string): MediaItem[] {
   const items: MediaItem[] = [];
 
   const videoUrl = matchMeta(html, 'og:video') ?? matchMeta(html, 'og:video:secure_url');
