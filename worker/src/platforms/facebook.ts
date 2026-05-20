@@ -30,15 +30,16 @@ export function detectFacebookKind(url: URL): ContentKind | null {
 
 export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   const url = new URL(rawUrl);
-  const kind = detectFacebookKind(url);
-  if (!kind) {
+  const initialKind = detectFacebookKind(url);
+  if (!initialKind) {
     throw new ResolveError(
       'Invalid Facebook URL. Supported: Post (/<page>/posts/<id>), Video (/<page>/videos/<id> or /watch?v=<id>), Reel (/reel/<id>), share link (/share/<token>), fb.watch.',
       'INVALID_FACEBOOK_URL',
     );
   }
 
-  const html = await fetchHtml(rawUrl, kind);
+  const { html, finalUrl } = await fetchHtml(rawUrl, initialKind);
+  const kind = reconcileKind(url, finalUrl, initialKind);
   const items = extractFromHtml(html);
 
   if (items.length === 0) {
@@ -57,7 +58,7 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   return { platform: 'facebook', kind, mediaItems: items };
 }
 
-async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
+async function fetchHtml(url: string, kind: ContentKind): Promise<{ html: string; finalUrl: string }> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -95,7 +96,29 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
       { status: res.status },
     );
   }
-  return await readBoundedText(res, MAX_HTML_BYTES);
+  const finalUrl = res.url || url;
+  const html = await readBoundedText(res, MAX_HTML_BYTES);
+  return { html, finalUrl };
+}
+
+// Pure helper: when the input arrived as /share/<token>, the kind was tagged
+// optimistically. After redirect resolution, if the final URL parses to a
+// concrete kind, prefer that — but never override a non-/share/ input where
+// the caller's intent was explicit.
+export function reconcileKind(
+  initialUrl: URL,
+  finalUrl: string,
+  initialKind: ContentKind,
+): ContentKind {
+  if (!/^\/share\//i.test(initialUrl.pathname)) return initialKind;
+  let parsed: URL;
+  try {
+    parsed = new URL(finalUrl);
+  } catch {
+    return initialKind;
+  }
+  const redetected = detectFacebookKind(parsed);
+  return redetected ?? initialKind;
 }
 
 export function extractFromHtml(html: string): MediaItem[] {

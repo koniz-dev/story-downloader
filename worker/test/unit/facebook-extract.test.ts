@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractFromHtml, unescapeJson } from '../../src/platforms/facebook';
+import { extractFromHtml, reconcileKind, unescapeJson } from '../../src/platforms/facebook';
 
 describe('extractFromHtml (facebook)', () => {
   it('og:video meta → single video item with og:image as thumbnail', () => {
@@ -118,5 +118,55 @@ describe('unescapeJson (facebook)', () => {
 
   it('leaves non-escape sequences alone', () => {
     expect(unescapeJson('plain string with no escapes')).toBe('plain string with no escapes');
+  });
+});
+
+describe('reconcileKind (facebook)', () => {
+  it('promotes /share/<token>(post) to reel when final URL is a reel page', () => {
+    const initial = new URL('https://www.facebook.com/share/AbCdEf/');
+    const finalUrl = 'https://www.facebook.com/reel/1234567890';
+    expect(reconcileKind(initial, finalUrl, 'post')).toBe('reel');
+  });
+
+  it('promotes /share/<token>(post) to video when final URL is a /videos/ page', () => {
+    const initial = new URL('https://www.facebook.com/share/AbCdEf/');
+    const finalUrl = 'https://www.facebook.com/somepage/videos/1234567890';
+    expect(reconcileKind(initial, finalUrl, 'post')).toBe('video');
+  });
+
+  it('promotes /share/<token>(post) to story when final URL is a /stories/ page', () => {
+    const initial = new URL('https://www.facebook.com/share/AbCdEf/');
+    const finalUrl = 'https://www.facebook.com/stories/1234567890';
+    expect(reconcileKind(initial, finalUrl, 'post')).toBe('story');
+  });
+
+  it('keeps initial kind when /share/ final URL re-detects to null', () => {
+    const initial = new URL('https://www.facebook.com/share/AbCdEf/');
+    const finalUrl = 'https://www.facebook.com/some/unrecognized/page';
+    expect(reconcileKind(initial, finalUrl, 'post')).toBe('post');
+  });
+
+  it('keeps initial kind when /share/ final URL is unparseable', () => {
+    const initial = new URL('https://www.facebook.com/share/AbCdEf/');
+    expect(reconcileKind(initial, 'not a url at all', 'post')).toBe('post');
+  });
+
+  it('does not override an explicitly-typed reel input even if the final URL says otherwise', () => {
+    // Caller asked for /reel/<id>; never demote their explicit intent.
+    const initial = new URL('https://www.facebook.com/reel/1234567890');
+    const finalUrl = 'https://www.facebook.com/somepage/videos/9999999999';
+    expect(reconcileKind(initial, finalUrl, 'reel')).toBe('reel');
+  });
+
+  it('does not override an explicit /posts/ input', () => {
+    const initial = new URL('https://www.facebook.com/somepage/posts/abcdef');
+    const finalUrl = 'https://www.facebook.com/reel/1234567890';
+    expect(reconcileKind(initial, finalUrl, 'post')).toBe('post');
+  });
+
+  it('handles /share/v/<token> -> /videos/<id> redirect (kind stays video)', () => {
+    const initial = new URL('https://www.facebook.com/share/v/AbCdEf/');
+    const finalUrl = 'https://www.facebook.com/somepage/videos/1234567890';
+    expect(reconcileKind(initial, finalUrl, 'video')).toBe('video');
   });
 });
