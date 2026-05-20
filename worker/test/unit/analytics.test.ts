@@ -68,6 +68,11 @@ describe('validateTrackPayload', () => {
     'bulk.start',
     'bulk.complete',
     'share-target.received',
+    'vitals.lcp',
+    'vitals.inp',
+    'vitals.cls',
+    'vitals.ttfb',
+    'vitals.fcp',
   ])('accepts known prefix in %s', (event) => {
     expect(() => validateTrackPayload({ event })).not.toThrow();
   });

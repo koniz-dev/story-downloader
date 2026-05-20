@@ -8,6 +8,7 @@ import { checkRateLimit } from './rate-limit';
 import { applySecurityHeaders, getOrCreateRequestId, setRequestId } from './headers';
 import { SERVICE_NAME, SERVICE_VERSION, uptimeSeconds } from './version';
 import { validateTrackPayload, writeTrack } from './analytics';
+import { readBoundedRequestBody } from './util/body';
 import { ResolveError, type Env, type Platform } from './types';
 
 // Cap the /api/resolve body. A platform URL fits comfortably in 2 KB; 8 KB
@@ -62,10 +63,10 @@ function cachedJson(body: unknown, cacheControl: string): Response {
 
 router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestContext) => {
   await checkRateLimit(request, '/api/resolve');
-  enforceBodySize(request);
 
   const started = Date.now();
-  const body = (await request.json().catch(() => null)) as { url?: string } | null;
+  const raw = await readBoundedRequestBody(request, MAX_RESOLVE_BODY_BYTES);
+  const body = parseJson<{ url?: string }>(raw);
   if (!body?.url || typeof body.url !== 'string') {
     throw new ResolveError('Body must include "url" string field', 'MISSING_URL');
   }
@@ -123,20 +124,8 @@ router.get('/api/proxy', async (request: Request, _env: Env, ctx: RequestContext
 
 router.post('/api/track', async (request: Request, env: Env) => {
   await checkRateLimit(request, '/api/track');
-  const lenHeader = request.headers.get('Content-Length');
-  if (lenHeader) {
-    const len = Number.parseInt(lenHeader, 10);
-    if (Number.isFinite(len) && len > MAX_TRACK_BODY_BYTES) {
-      throw new ResolveError(
-        `Track body exceeds ${MAX_TRACK_BODY_BYTES} bytes`,
-        'BODY_TOO_LARGE',
-        413,
-        { limit: MAX_TRACK_BODY_BYTES, length: len },
-      );
-    }
-  }
-  const raw = await request.json().catch(() => null);
-  const payload = validateTrackPayload(raw);
+  const raw = await readBoundedRequestBody(request, MAX_TRACK_BODY_BYTES);
+  const payload = validateTrackPayload(parseJson<unknown>(raw));
   writeTrack(env, payload);
   return new Response(null, { status: 204 });
 });
@@ -165,17 +154,12 @@ function methodNotAllowed(allow: string): Response {
   );
 }
 
-function enforceBodySize(request: Request): void {
-  const lenHeader = request.headers.get('Content-Length');
-  if (!lenHeader) return; // Clients may omit; downstream JSON.parse caps the damage.
-  const len = Number.parseInt(lenHeader, 10);
-  if (Number.isFinite(len) && len > MAX_RESOLVE_BODY_BYTES) {
-    throw new ResolveError(
-      `Request body exceeds ${MAX_RESOLVE_BODY_BYTES} bytes`,
-      'BODY_TOO_LARGE',
-      413,
-      { limit: MAX_RESOLVE_BODY_BYTES, length: len },
-    );
+function parseJson<T>(raw: string): T | null {
+  if (raw.length === 0) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
   }
 }
 

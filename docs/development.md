@@ -51,3 +51,17 @@ Translations live in `frontend/src/lib/i18n/<locale>.ts`. To add a new locale:
 cd frontend && npm run lint   # tsc -b --noEmit
 cd worker   && npm run lint   # tsc --noEmit
 ```
+
+## Git hooks
+
+Pre-commit hook runs `tsc --noEmit` and `vitest --changed` on whichever package
+has staged files (worker / frontend). Install once per clone:
+
+```bash
+bash scripts/setup-hooks.sh
+```
+
+The hook is the first line of defence — the full suites still run in
+`.github/workflows/deploy-{pages,worker}.yml`, but `main` auto-deploys, so
+catching breakage *before* push saves a red CI badge on prod.
+Skip in one-off cases with `git commit --no-verify`.

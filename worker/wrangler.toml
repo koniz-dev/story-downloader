@@ -1,7 +1,9 @@
 name = "story-dl-worker"
 main = "src/index.ts"
 compatibility_date = "2026-01-15"
-compatibility_flags = ["nodejs_compat"]
+# No nodejs_compat: the worker uses Web APIs only (fetch, URL, crypto.randomUUID,
+# TextEncoder/Decoder, ReadableStream). Dropping the flag minimises the runtime
+# surface — re-add it only if a future dependency genuinely needs Node built-ins.
 
 # Allowed origins for CORS — comma-separated, no spaces. Supports `*` glob
 # patterns (see worker/src/cors.ts), but do NOT broaden to `*.github.io` —

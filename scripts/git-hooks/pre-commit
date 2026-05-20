@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Pre-commit hook: typecheck + (cheap) test the packages whose files are
+# staged. Skips packages with no staged changes — keeps commits to docs / TODO
+# / .github fast.
+#
+# Push to `main` auto-deploys (see CLAUDE.md), so a broken commit = broken
+# prod. This hook is the first line of defence; the full suites still run in
+# .github/workflows/deploy-{pages,worker}.yml as the merge-time chokepoint.
+#
+# Activate once per clone:
+#   git config core.hooksPath scripts/git-hooks
+# Or use the convenience installer:
+#   bash scripts/setup-hooks.sh
+#
+# Skip in one-off cases with `git commit --no-verify`. Don't make that a habit.
+
+set -euo pipefail
+
+# Repo root: hooks fire from .git/hooks regardless of CWD when invoked by git,
+# so resolve relative to this script's location.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
+
+changed="$(git diff --cached --name-only --diff-filter=ACMRT)"
+
+if [ -z "$changed" ]; then
+  # Nothing staged that matters (e.g. permission-only changes). Let git decide
+  # whether to allow the commit.
+  exit 0
+fi
+
+fail() {
+  echo ""
+  echo "❌ pre-commit blocked: $1"
+  echo "   Fix the issue above, or rerun with --no-verify if you understand why."
+  exit 1
+}
+
+run_pkg() {
+  local pkg="$1"
+  local label="$2"
+
+  if ! echo "$changed" | grep -q "^${pkg}/"; then
+    return 0
+  fi
+
+  if [ ! -d "${ROOT}/${pkg}/node_modules" ]; then
+    echo "⚠  ${label}: node_modules missing — skipping (run \`npm install\` in ${pkg}/ to enable hook)"
+    return 0
+  fi
+
+  echo "🔍 ${label}: typecheck"
+  if ! (cd "${ROOT}/${pkg}" && npx --no-install tsc -b --noEmit 2>&1); then
+    fail "${label} typecheck failed"
+  fi
+
+  # `vitest --changed` runs only the tests whose files (or their dependency
+  # graph) overlap with the working-tree diff. Fast in the common case.
+  echo "🧪 ${label}: vitest --changed"
+  if ! (cd "${ROOT}/${pkg}" && npx --no-install vitest run --changed --reporter=dot 2>&1); then
+    fail "${label} tests failed"
+  fi
+}
+
+run_pkg "worker" "worker"
+run_pkg "frontend" "frontend"
+
+echo "✓ pre-commit checks passed"

@@ -34,6 +34,13 @@ export const SECURITY_HEADERS: Record<string, string> = {
   'Cross-Origin-Resource-Policy': 'cross-origin',
   // The API should never be indexed by search engines.
   'X-Robots-Tag': 'noindex, nofollow',
+  // Defense in depth: the worker is an API, not a browsing context, so a
+  // Permissions-Policy header doesn't gate any real document features here.
+  // We still emit it so any browser that ever does treat a worker response as
+  // a document (image/video preload, debugger panel) sees high-risk features
+  // explicitly disabled. Zero cost, narrows the surface if a downstream
+  // refactor ever serves HTML from this worker.
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
 };
 
 export function applySecurityHeaders(headers: Headers): void {

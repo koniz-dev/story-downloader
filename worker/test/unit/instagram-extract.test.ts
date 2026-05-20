@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { extractFromHtml, parseEmbed } from '../../src/platforms/instagram';
+import {
+  extractFromHtml,
+  normalizeInstagramCacheKey,
+  parseEmbed,
+} from '../../src/platforms/instagram';
 
 describe('extractFromHtml', () => {
   it('returns video with thumbnail when og:video and og:image are present', () => {
@@ -154,5 +158,43 @@ describe('parseEmbed', () => {
     expect(parseEmbed(html)).toEqual([
       { type: 'image', url: 'https://cdn.instagram.com/i/pic.jpg?a=1&b=2' },
     ]);
+  });
+});
+
+describe('normalizeInstagramCacheKey', () => {
+  it('strips igsh / igshid share tokens so two callers share a cache entry', () => {
+    const a = 'https://www.instagram.com/p/abc/?igsh=AAAAA';
+    const b = 'https://www.instagram.com/p/abc/?igshid=BBBBB';
+    expect(normalizeInstagramCacheKey(a)).toBe(normalizeInstagramCacheKey(b));
+    expect(normalizeInstagramCacheKey(a)).toBe('https://www.instagram.com/p/abc/');
+  });
+
+  it('strips utm_* tracking params', () => {
+    const n = normalizeInstagramCacheKey(
+      'https://www.instagram.com/reel/xyz/?utm_source=share&utm_medium=copy_link&utm_campaign=foo&utm_content=bar',
+    );
+    expect(n).toBe('https://www.instagram.com/reel/xyz/');
+  });
+
+  it('lower-cases the hostname so casing variants share a key', () => {
+    const n = normalizeInstagramCacheKey('https://WWW.Instagram.COM/p/abc/');
+    expect(n).toBe('https://www.instagram.com/p/abc/');
+  });
+
+  it('preserves substantive query params (none expected on IG, but be safe)', () => {
+    const n = normalizeInstagramCacheKey(
+      'https://www.instagram.com/p/abc/?img_index=2&igsh=AAAAA',
+    );
+    // img_index is a real IG carousel selector — must survive normalization.
+    expect(n).toBe('https://www.instagram.com/p/abc/?img_index=2');
+  });
+
+  it('drops hash fragment', () => {
+    const n = normalizeInstagramCacheKey('https://www.instagram.com/p/abc/#anchor');
+    expect(n).toBe('https://www.instagram.com/p/abc/');
+  });
+
+  it('returns null for unparseable input', () => {
+    expect(normalizeInstagramCacheKey('not-a-url')).toBeNull();
   });
 });

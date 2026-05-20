@@ -17,6 +17,36 @@ export function detectInstagramKind(url: URL): ContentKind | null {
   return null;
 }
 
+// 1-hour cache for successful resolves. IG signed `oe=` URLs are valid for ~24h,
+// so 1h sits comfortably inside that window. The big win is bulk mode + retries:
+// IG aggressively rate-limits anonymous Worker egress, and a cache hit dodges
+// the upstream round-trip (and the rate-limit bucket) entirely. og:video /
+// og:image URLs are public CDN URLs with no user identity — safe to share
+// across callers.
+const IG_RESOLVE_CACHE_TTL_S = 3600;
+// Exact-match list of tracking params IG appends from share/sharesheet flows.
+// They don't affect resolution, so stripping them maximises hit rate.
+const IG_TRACKING_PARAMS = ['igsh', 'igshid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+
+export function normalizeInstagramCacheKey(rawUrl: string): string | null {
+  try {
+    const u = new URL(rawUrl);
+    u.hash = '';
+    u.hostname = u.hostname.toLowerCase();
+    for (const key of IG_TRACKING_PARAMS) u.searchParams.delete(key);
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+function cacheRequestForIg(normalizedUrl: string): Request {
+  return new Request(
+    `https://ig-cache.local/resolve/${encodeURIComponent(normalizedUrl)}`,
+    { method: 'GET' },
+  );
+}
+
 export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
   const url = new URL(rawUrl);
   const kind = detectInstagramKind(url);
@@ -36,6 +66,22 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
       'INSTAGRAM_STORY_BLOCKED',
       422,
     );
+  }
+
+  const normalized = normalizeInstagramCacheKey(rawUrl);
+  const cache = (globalThis as { caches?: CacheStorage }).caches?.default;
+  // Cache lookup before any upstream fetch — a hit dodges IG's rate-limit
+  // bucket entirely, which matters because IG throttles aggressively.
+  if (normalized && cache) {
+    try {
+      const hit = await cache.match(cacheRequestForIg(normalized));
+      if (hit) {
+        const cached = (await hit.json()) as ResolveResult | null;
+        if (cached?.mediaItems && cached.mediaItems.length > 0) return cached;
+      }
+    } catch {
+      // Cache read is best-effort; fall through to a fresh fetch.
+    }
   }
 
   let items: MediaItem[] = [];
@@ -64,12 +110,30 @@ export async function resolveInstagram(rawUrl: string): Promise<ResolveResult> {
   const expectsVideo = kind === 'reel' || kind === 'video';
   const degraded = expectsVideo && !items.some((i) => i.type === 'video');
 
-  return {
+  const result: ResolveResult = {
     platform: 'instagram',
     kind,
     mediaItems: items,
     ...(degraded ? { degraded: true } : {}),
   };
+
+  // Only cache success — never poison the cache with an empty result. Mirror
+  // the Facebook pattern (see normalizeFacebookCacheKey).
+  if (normalized && cache) {
+    try {
+      const cacheRes = new Response(JSON.stringify(result), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': `max-age=${IG_RESOLVE_CACHE_TTL_S}`,
+        },
+      });
+      await cache.put(cacheRequestForIg(normalized), cacheRes);
+    } catch {
+      // Cache write is best-effort; never block the response on it.
+    }
+  }
+
+  return result;
 }
 
 function extractShortcode(url: URL): string | null {

@@ -8,7 +8,8 @@ type TrackEvent =
   | { event: 'download.click'; platform: string; kind: string; type: string }
   | { event: 'bulk.start'; count: number }
   | { event: 'bulk.complete'; ok: number; failed: number; total: number }
-  | { event: 'share-target.received'; platform: string };
+  | { event: 'share-target.received'; platform: string }
+  | { event: 'vitals.lcp' | 'vitals.inp' | 'vitals.cls' | 'vitals.ttfb' | 'vitals.fcp'; ms: number };
 
 const TRACK_URL = (import.meta.env.VITE_WORKER_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 

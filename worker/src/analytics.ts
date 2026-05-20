@@ -16,6 +16,11 @@ const ALLOWED_EVENT_PREFIXES = [
   'download.',
   'bulk.',
   'share-target.',
+  // Field-RUM (web-vitals): vitals.lcp / vitals.inp / vitals.cls / vitals.ttfb /
+  // vitals.fcp. Value is passed via the existing `ms` double — natural for
+  // time-based metrics; CLS is multiplied by 1000 before send (see
+  // frontend/src/lib/vitals.ts) so it fits the same field without a schema bump.
+  'vitals.',
 ] as const;
 
 export interface TrackPayload {
