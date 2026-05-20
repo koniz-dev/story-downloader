@@ -112,7 +112,7 @@ router.get('/api/proxy', async (request: Request, _env: Env, ctx: RequestContext
     host: safeHost(target),
     hasFilename: !!filename,
   });
-  return await proxyMedia(target, filename);
+  return await proxyMedia(target, filename, request);
 });
 
 // 405 fallbacks for known paths — without these, a GET /api/resolve falls
