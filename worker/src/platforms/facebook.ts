@@ -30,15 +30,16 @@ export function detectFacebookKind(url: URL): ContentKind | null {
 
 export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   const url = new URL(rawUrl);
-  const kind = detectFacebookKind(url);
-  if (!kind) {
+  const initialKind = detectFacebookKind(url);
+  if (!initialKind) {
     throw new ResolveError(
       'Invalid Facebook URL. Supported: Post (/<page>/posts/<id>), Video (/<page>/videos/<id> or /watch?v=<id>), Reel (/reel/<id>), share link (/share/<token>), fb.watch.',
       'INVALID_FACEBOOK_URL',
     );
   }
 
-  const html = await fetchHtml(rawUrl, kind);
+  const { html, finalUrl } = await fetchHtml(rawUrl, initialKind);
+  const kind = reconcileKind(url, finalUrl, initialKind);
   const items = extractFromHtml(html);
 
   if (items.length === 0) {
@@ -57,7 +58,7 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   return { platform: 'facebook', kind, mediaItems: items };
 }
 
-async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
+async function fetchHtml(url: string, kind: ContentKind): Promise<{ html: string; finalUrl: string }> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -95,10 +96,32 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
       { status: res.status },
     );
   }
-  return await readBoundedText(res, MAX_HTML_BYTES);
+  const finalUrl = res.url || url;
+  const html = await readBoundedText(res, MAX_HTML_BYTES);
+  return { html, finalUrl };
 }
 
-function extractFromHtml(html: string): MediaItem[] {
+// Pure helper: when the input arrived as /share/<token>, the kind was tagged
+// optimistically. After redirect resolution, if the final URL parses to a
+// concrete kind, prefer that — but never override a non-/share/ input where
+// the caller's intent was explicit.
+export function reconcileKind(
+  initialUrl: URL,
+  finalUrl: string,
+  initialKind: ContentKind,
+): ContentKind {
+  if (!/^\/share\//i.test(initialUrl.pathname)) return initialKind;
+  let parsed: URL;
+  try {
+    parsed = new URL(finalUrl);
+  } catch {
+    return initialKind;
+  }
+  const redetected = detectFacebookKind(parsed);
+  return redetected ?? initialKind;
+}
+
+export function extractFromHtml(html: string): MediaItem[] {
   const items: MediaItem[] = [];
 
   const videoUrl = matchMeta(html, 'og:video') ?? matchMeta(html, 'og:video:secure_url');
@@ -152,6 +175,22 @@ function decodeHtml(s: string): string {
   });
 }
 
-function unescapeJson(s: string): string {
-  return s.replace(/\\\//g, '/').replace(/\\u0026/g, '&');
+export function unescapeJson(s: string): string {
+  // Single-pass tokenizer: a sequential .replace() chain risks letting a later
+  // step re-consume an earlier step's output (e.g. \\ -> \ followed by \/ -> /
+  // would turn a literal "\\/" into "/"). One regex over all escape forms
+  // means each source character is decoded at most once.
+  return s.replace(/\\u0026|\\u002[fF]|\\u003[dD]|\\\/|\\"|\\\\/g, (m) => {
+    switch (m) {
+      case '\\u0026': return '&';
+      case '\\u002f':
+      case '\\u002F': return '/';
+      case '\\u003d':
+      case '\\u003D': return '=';
+      case '\\/': return '/';
+      case '\\"': return '"';
+      case '\\\\': return '\\';
+      default: return m;
+    }
+  });
 }
