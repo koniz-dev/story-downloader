@@ -87,9 +87,9 @@ Full setup, deployment, and i18n instructions in
 - [x] TikTok video / photo slideshow / short links (watermarked)
 - [x] Per-platform guide UI with platform selector
 - [x] i18n: English, Vietnamese, Japanese, Korean, Chinese
+- [x] Dark / light mode toggle
 - [ ] Bulk download from multiple URLs
 - [ ] PWA + mobile share-target
-- [ ] Dark / light mode toggle
 
 ## Tech stack
 

@@ -41,4 +41,3 @@ a single platform.
 
 - [ ] **P2** Bulk download from multiple URLs — README roadmap.
 - [ ] **P2** PWA + mobile share-target — README roadmap; lets users share a link from the OS share sheet straight into the app.
-- [ ] **P2** Dark / light mode toggle — README roadmap; today the theme is fixed.
