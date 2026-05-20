@@ -45,15 +45,15 @@ Use `- [~]` for in-progress. Within each epic, list open items first
 Worker runtime, frontend shell, i18n, build/CI, tooling. Anything not tied to
 a single platform.
 
-- [ ] **P1** Wire `track()` to a real sink or remove dead events — `resolve.fail`/`bulk.complete` etc. are designed to aggregate but only `console.log`. `frontend/src/lib/track.ts:11`.
-- [ ] **P1** Tests for `lib/download.ts`, `lib/api.ts` (ApiError + requestId fallback), and `lib/theme/index.ts` (meta-tag swap) — non-presentational code with real branching. `frontend/test/unit/`.
-- [ ] **P2** `Cache-Control` on `/api/health` and `/api/version` — every probe is a cold round-trip; 30s `s-maxage` lets the CF edge serve. `worker/src/index.ts`.
-- [ ] **P2** Forward `Content-Range`/`Accept-Ranges` in `proxyMedia` — large videos can't resume; only `Content-Length` is preserved today. `worker/src/proxy.ts:162-167`.
-- [ ] **P2** Bump `compatibility_date` in `wrangler.toml` — `2024-11-20` is ~18 months stale; missing recent runtime features. `worker/wrangler.toml:3`.
-- [ ] **P2** React 18 → 19 upgrade — rest of the stack (Vite 8, TS 6, Vitest 4) is bleeding-edge; React is the only LTS-lagged dep. `frontend/package.json`.
-- [ ] **P2** Restore integration happy-path tests — `fetchMock` removed in `@cloudflare/vitest-pool-workers` v0.16 leaves resolve-success and proxy-stream untested. `worker/test/integration/api.test.ts`.
-- [ ] **P2** Include `requestId` in `track.ts` events — frontend logs can't correlate with worker structured logs. `frontend/src/lib/track.ts:5`.
-- [ ] **P2** Belt-and-braces: assert `request.cf` presence before trusting `cf-connecting-ip` — CF strips spoofed header at the edge so safe today, but defense-in-depth. `worker/src/rate-limit.ts:22`.
+- [ ] **P1** Wire `track()` to a real sink or remove dead events — `resolve.fail`/`bulk.complete` etc. are designed to aggregate but only `console.log`. Needs a telemetry product decision (Analytics Engine? Plausible? GoatCounter?). `frontend/src/lib/track.ts:13`.
+- [ ] **P2** React 18 → 19 upgrade — major upgrade with breaking changes; defer until effort/risk is sized. `frontend/package.json`.
+- [ ] **P2** Restore integration happy-path tests — `fetchMock` removed in `@cloudflare/vitest-pool-workers` v0.16. Decide between pinning to v0.15 or rewriting against the v0.16+ API. `worker/test/integration/api.test.ts`.
+- [x] **P1** Tests for `lib/download.ts`, `lib/api.ts` (ApiError + requestId fallback), and `lib/theme/index.ts` — shipped 2026-05-20; 30 new cases across 3 test files; `theme/index.ts` switched to attribute APIs for `media` (jsdom-safe + universal browser support).
+- [x] **P2** `Cache-Control` on `/api/health` and `/api/version` — shipped 2026-05-20; `public, s-maxage=30` so the CF edge serves probes.
+- [x] **P2** Forward `Content-Range`/`Accept-Ranges` in `proxyMedia` — shipped 2026-05-20; inbound `Range` forwarded to upstream, 206 + Content-Range passed back to client; covered by 2 unit tests.
+- [x] **P2** Bump `compatibility_date` in `wrangler.toml` — shipped 2026-05-20; `2024-11-20` → `2026-01-15` (~4 months shakeout).
+- [x] **P2** Include `requestId` in `track.ts` events — shipped 2026-05-20; optional field on `resolve.ok` + `resolve.fail`, plumbed through both single + bulk submit handlers.
+- [x] **P2** Belt-and-braces: assert `request.cf` presence before trusting `cf-connecting-ip` — shipped 2026-05-20; `checkRateLimit` skips rate limiting entirely when `request.cf` is missing (dev frictionless, prod unchanged since CF always sets it).
 
 - [x] **P1** "Download all" affordance in bulk mode — shipped 2026-05-20; button appears when ≥2 successful rows, reuses 250ms stagger from single-mode handleDownloadAll.
 - [x] **P1** Memoize `proxyUrl(item.url)` in `MediaCard` — shipped 2026-05-20; one `useMemo` keyed on `item.url`, both poster + video src reuse the same string.

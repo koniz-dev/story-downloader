@@ -73,7 +73,12 @@ describe('downloadMedia', () => {
     const [calledUrl, calledFilename] = proxyUrlMock.mock.calls[0];
     expect(calledUrl).toBe('https://cdn.example/a.mp4');
     expect(calledFilename).toMatch(/^tiktok-video-\d+\.mp4$/);
-    expect(anchor.href).toBe(`PROXY::https://cdn.example/a.mp4::${calledFilename}`);
+    // Assert via getAttribute, not .href — the HTMLAnchorElement IDL getter
+    // parses+normalizes the attribute, lowercasing unknown schemes ("PROXY::"
+    // → "proxy::"). getAttribute preserves the raw stored value.
+    expect(anchor.getAttribute('href')).toBe(
+      `PROXY::https://cdn.example/a.mp4::${calledFilename}`,
+    );
   });
 
   it('derives filename from platform + kind for a video (.mp4)', () => {

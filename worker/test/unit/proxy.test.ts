@@ -52,7 +52,7 @@ describe('proxyMedia range passthrough', () => {
       vi.fn(async (_input: RequestInfo, init?: RequestInit) => {
         const headers = new Headers(init?.headers);
         seen.range = headers.get('Range');
-        return new Response('partial', {
+        const res = new Response('partial', {
           status: 206,
           headers: {
             'Content-Type': 'video/mp4',
@@ -61,6 +61,14 @@ describe('proxyMedia range passthrough', () => {
             'Content-Length': '7',
           },
         });
+        // The spec-default Response.url is "" — assertFinalHostAllowed runs
+        // `new URL(res.url)` and would throw. Pin a URL the host whitelist
+        // accepts (*.cdninstagram.com).
+        Object.defineProperty(res, 'url', {
+          value: 'https://scontent.cdninstagram.com/video.mp4',
+          configurable: true,
+        });
+        return res;
       }),
     );
 
@@ -82,17 +90,21 @@ describe('proxyMedia range passthrough', () => {
   it('passes 200 + Accept-Ranges through when no Range was requested', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () =>
-          new Response('full', {
-            status: 200,
-            headers: {
-              'Content-Type': 'video/mp4',
-              'Accept-Ranges': 'bytes',
-              'Content-Length': '4',
-            },
-          }),
-      ),
+      vi.fn(async () => {
+        const res = new Response('full', {
+          status: 200,
+          headers: {
+            'Content-Type': 'video/mp4',
+            'Accept-Ranges': 'bytes',
+            'Content-Length': '4',
+          },
+        });
+        Object.defineProperty(res, 'url', {
+          value: 'https://scontent.cdninstagram.com/video.mp4',
+          configurable: true,
+        });
+        return res;
+      }),
     );
 
     const res = await proxyMedia(

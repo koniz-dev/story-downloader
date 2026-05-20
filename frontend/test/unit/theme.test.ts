@@ -15,6 +15,12 @@ function metas(): HTMLMetaElement[] {
   ) as HTMLMetaElement[];
 }
 
+// HTMLMetaElement.media IDL is a recent addition not implemented by jsdom,
+// so read via the attribute API which is universal.
+function mediaOf(m: HTMLMetaElement): string {
+  return m.getAttribute('media') ?? '';
+}
+
 function setMatchMedia(matchesDark: boolean) {
   const listeners: Array<(ev: MediaQueryListEvent) => void> = [];
   const mql = {
@@ -102,8 +108,8 @@ describe('syncThemeColorMeta', () => {
     syncThemeColorMeta('system', 'light');
     const m = metas();
     expect(m).toHaveLength(2);
-    const light = m.find((x) => x.media.includes('light'));
-    const dark = m.find((x) => x.media.includes('dark'));
+    const light = m.find((x) => mediaOf(x).includes('light'));
+    const dark = m.find((x) => mediaOf(x).includes('dark'));
     expect(light?.content).toBe(LIGHT_BG);
     expect(dark?.content).toBe(DARK_BG);
   });
@@ -113,7 +119,7 @@ describe('syncThemeColorMeta', () => {
     syncThemeColorMeta('dark', 'dark');
     const m = metas();
     expect(m).toHaveLength(1);
-    expect(m[0].media).toBe('');
+    expect(m[0].getAttribute('media')).toBeNull();
     expect(m[0].content).toBe(DARK_BG);
   });
 
@@ -122,7 +128,7 @@ describe('syncThemeColorMeta', () => {
     syncThemeColorMeta('light', 'light');
     const m = metas();
     expect(m).toHaveLength(1);
-    expect(m[0].media).toBe('');
+    expect(m[0].getAttribute('media')).toBeNull();
     expect(m[0].content).toBe(LIGHT_BG);
   });
 
@@ -134,8 +140,8 @@ describe('syncThemeColorMeta', () => {
     syncThemeColorMeta('system', 'light');
     const m = metas();
     expect(m).toHaveLength(2);
-    expect(m.some((x) => x.media.includes('light') && x.content === LIGHT_BG)).toBe(true);
-    expect(m.some((x) => x.media.includes('dark') && x.content === DARK_BG)).toBe(true);
+    expect(m.some((x) => mediaOf(x).includes('light') && x.content === LIGHT_BG)).toBe(true);
+    expect(m.some((x) => mediaOf(x).includes('dark') && x.content === DARK_BG)).toBe(true);
   });
 
   it('is idempotent in system mode — does not duplicate metas on repeat call', () => {

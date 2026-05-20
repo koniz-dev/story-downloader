@@ -48,17 +48,20 @@ export function syncThemeColorMeta(theme: Theme, resolved: Resolved) {
   ) as HTMLMetaElement[];
 
   if (theme === 'system') {
-    const hasLightMedia = existing.some((m) => m.media.includes('light'));
-    const hasDarkMedia = existing.some((m) => m.media.includes('dark'));
+    // HTMLMetaElement.media is a recent IDL addition (added for the
+    // theme-color spec) — jsdom and older browsers don't expose it as a
+    // property. Read/write via attribute APIs instead, which work everywhere.
+    const hasLightMedia = existing.some((m) => (m.getAttribute('media') ?? '').includes('light'));
+    const hasDarkMedia = existing.some((m) => (m.getAttribute('media') ?? '').includes('dark'));
     if (hasLightMedia && hasDarkMedia && existing.length === 2) return;
     existing.forEach((m) => m.remove());
     const lightMeta = document.createElement('meta');
     lightMeta.name = 'theme-color';
-    lightMeta.media = '(prefers-color-scheme: light)';
+    lightMeta.setAttribute('media', '(prefers-color-scheme: light)');
     lightMeta.content = LIGHT_BG;
     const darkMeta = document.createElement('meta');
     darkMeta.name = 'theme-color';
-    darkMeta.media = '(prefers-color-scheme: dark)';
+    darkMeta.setAttribute('media', '(prefers-color-scheme: dark)');
     darkMeta.content = DARK_BG;
     head.append(lightMeta, darkMeta);
     return;
