@@ -45,7 +45,7 @@ Use `- [~]` for in-progress. Within each epic, list open items first
 Worker runtime, frontend shell, i18n, build/CI, tooling. Anything not tied to
 a single platform.
 
-- [ ] **P1** Wire `track()` to a real sink or remove dead events — `resolve.fail`/`bulk.complete` etc. are designed to aggregate but only `console.log`. Needs a telemetry product decision (Analytics Engine? Plausible? GoatCounter?). `frontend/src/lib/track.ts:13`.
+- [x] **P1** Wire `track()` to a real sink — shipped 2026-05-20; fire-and-forget `navigator.sendBeacon` (fallback `fetch` keepalive) → `POST /api/track` → `env.AE.writeDataPoint` with a positional schema documented in `worker/src/analytics.ts`. 120/min/IP rate-limit bucket; query data via Cloudflare Dashboard → Workers & Pages → Analytics Engine.
 - [ ] **P2** React 18 → 19 upgrade — major upgrade with breaking changes; defer until effort/risk is sized. `frontend/package.json`.
 - [ ] **P2** Restore integration happy-path tests — `fetchMock` removed in `@cloudflare/vitest-pool-workers` v0.16. Decide between pinning to v0.15 or rewriting against the v0.16+ API. `worker/test/integration/api.test.ts`.
 - [x] **P1** Tests for `lib/download.ts`, `lib/api.ts` (ApiError + requestId fallback), and `lib/theme/index.ts` — shipped 2026-05-20; 30 new cases across 3 test files; `theme/index.ts` switched to attribute APIs for `media` (jsdom-safe + universal browser support).
