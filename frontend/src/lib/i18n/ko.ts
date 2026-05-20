@@ -114,6 +114,15 @@ export const ko: Translations = {
     downloadStarted: '다운로드를 시작했습니다',
     downloadingAll: '{n}개의 파일을 다운로드 중',
   },
+  bulk: {
+    modeSingle: '단일 URL',
+    modeBulk: '여러 URL',
+    textareaPlaceholder: '한 줄에 URL 하나씩 붙여넣기',
+    noValidUrls: '유효한 URL이 없습니다. Instagram, Facebook, TikTok 링크를 한 줄에 하나씩 붙여넣으세요.',
+    processingProgress: '{total}개 중 {done}개 처리 중…',
+    doneAllOk: '{total}개 URL을 모두 다운로드했습니다',
+    doneSomeFailed: '{total}개 중 {ok}개 성공 — 아래 오류를 확인하세요',
+  },
   alert: {
     close: '닫기',
     code: '코드',

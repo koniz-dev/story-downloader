@@ -114,6 +114,15 @@ export const ja: Translations = {
     downloadStarted: 'ダウンロードを開始しました',
     downloadingAll: '{n} 件のファイルをダウンロード中',
   },
+  bulk: {
+    modeSingle: '単一 URL',
+    modeBulk: '複数 URL',
+    textareaPlaceholder: '1 行に 1 つの URL を貼り付け',
+    noValidUrls: '有効な URL が見つかりません。Instagram・Facebook・TikTok のリンクを 1 行に 1 つ貼り付けてください。',
+    processingProgress: '{total} 件中 {done} 件を処理中…',
+    doneAllOk: '{total} 件すべての URL をダウンロードしました',
+    doneSomeFailed: '{total} 件中 {ok} 件成功 — エラーは下に表示されます',
+  },
   alert: {
     close: '閉じる',
     code: 'コード',

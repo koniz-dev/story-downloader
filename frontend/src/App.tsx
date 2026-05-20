@@ -6,6 +6,7 @@ import { MediaCard } from './components/MediaCard';
 import { MediaCardSkeleton } from './components/MediaCardSkeleton';
 import { ResultsHeader } from './components/ResultsHeader';
 import { ErrorAlert } from './components/ErrorAlert';
+import { BulkResultRow } from './components/BulkResultRow';
 import { LanguageSelector } from './components/LanguageSelector';
 import { ThemeToggle } from './components/ThemeToggle';
 import { StepHeader } from './components/StepHeader';
@@ -14,11 +15,15 @@ import { track } from './lib/track';
 import { format, useI18n } from './lib/i18n';
 import { useToast } from './lib/toast';
 import { downloadMedia } from './lib/download';
+import { detectPlatform } from './lib/platform';
 import { scrollIntoView } from './lib/scroll';
 import { useScrolled } from './lib/useScrolled';
-import type { Platform, ResolveResponse } from './types';
+import type { BulkRow, Platform, ResolveResponse } from './types';
 
 const STORAGE_KEY = 'sd.platform';
+const BULK_DELAY_MS = 500;
+
+type Mode = 'single' | 'bulk';
 
 export function App() {
   const { t } = useI18n();
@@ -30,9 +35,12 @@ export function App() {
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
     return saved === 'instagram' || saved === 'facebook' || saved === 'tiktok' ? saved : null;
   });
+  const [mode, setMode] = useState<Mode>('single');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ResolveResponse | null>(null);
   const [error, setError] = useState<{ message: string; code?: string; requestId?: string } | null>(null);
+  const [rows, setRows] = useState<BulkRow[]>([]);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   // Track which platform value transitioned the user from "no selection" so
   // we only scroll the form into view when it's a fresh pick — not on every
@@ -92,7 +100,18 @@ export function App() {
     setPlatform(p);
     setResult(null);
     setError(null);
+    setRows([]);
+    setBulkProgress(null);
     track({ event: 'platform.select', platform: p });
+  }
+
+  function handleModeChange(next: Mode) {
+    if (loading || next === mode) return;
+    setMode(next);
+    setResult(null);
+    setError(null);
+    setRows([]);
+    setBulkProgress(null);
   }
 
   function handleDownloadAll() {
@@ -106,34 +125,113 @@ export function App() {
     });
   }
 
-  async function handleSubmit(url: string) {
+  function resolveErrorMessage(e: unknown): { message: string; code?: string; requestId?: string } {
+    const code = e instanceof ApiError ? e.code : undefined;
+    const params = e instanceof ApiError ? e.params : undefined;
+    const requestId = e instanceof ApiError ? e.requestId : undefined;
+    const template = code && Object.prototype.hasOwnProperty.call(t.serverError, code)
+      ? t.serverError[code as keyof typeof t.serverError]
+      : null;
+    const message = template ? format(template, params ?? {}) : t.form.error.generic;
+    return { message, code, requestId };
+  }
+
+  async function handleSubmit(input: string) {
     if (!platform) return;
+    if (mode === 'bulk') {
+      await handleBulkSubmit(input);
+      return;
+    }
     setLoading(true);
     setError(null);
     setResult(null);
     const started = Date.now();
     track({ event: 'resolve.start', platform });
     try {
-      const res = await resolveMedia(url);
+      const res = await resolveMedia(input);
       setResult(res);
       track({ event: 'resolve.ok', platform, kind: res.kind, items: res.mediaItems.length, ms: Date.now() - started });
       if (res.mediaItems.length === 0) {
         setError({ message: t.result.noMedia, code: 'NO_MEDIA' });
       }
     } catch (e) {
-      const code = e instanceof ApiError ? e.code : undefined;
-      const params = e instanceof ApiError ? e.params : undefined;
-      const requestId = e instanceof ApiError ? e.requestId : undefined;
-      const template = code && Object.prototype.hasOwnProperty.call(t.serverError, code)
-        ? t.serverError[code as keyof typeof t.serverError]
-        : null;
-      const msg = template ? format(template, params ?? {}) : t.form.error.generic;
-      setError({ message: msg, code, requestId });
+      const { message, code, requestId } = resolveErrorMessage(e);
+      setError({ message, code, requestId });
       track({ event: 'resolve.fail', platform, code, ms: Date.now() - started });
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleBulkSubmit(text: string) {
+    const lines = text.split('\n').map((s) => s.trim()).filter(Boolean);
+    const valid = lines.filter((line) => detectPlatform(line) !== null);
+    if (valid.length === 0) {
+      toast.show(t.bulk.noValidUrls, 'error');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    const initial: BulkRow[] = valid.map((url) => ({ url, status: 'pending' }));
+    setRows(initial);
+    setBulkProgress({ done: 0, total: valid.length });
+    track({ event: 'bulk.start', count: valid.length });
+
+    let ok = 0;
+    let failed = 0;
+
+    for (let i = 0; i < valid.length; i++) {
+      const url = valid[i];
+      const rowPlatform = detectPlatform(url) ?? platform ?? 'instagram';
+      setRows((prev) => prev.map((r, idx) => (idx === i ? { url, status: 'loading' } : r)));
+      const started = Date.now();
+      track({ event: 'resolve.start', platform: rowPlatform });
+      try {
+        const res = await resolveMedia(url);
+        track({ event: 'resolve.ok', platform: rowPlatform, kind: res.kind, items: res.mediaItems.length, ms: Date.now() - started });
+        if (res.mediaItems.length === 0) {
+          failed++;
+          setRows((prev) =>
+            prev.map((r, idx) =>
+              idx === i ? { url, status: 'error', message: t.result.noMedia, code: 'NO_MEDIA' } : r,
+            ),
+          );
+        } else {
+          ok++;
+          setRows((prev) => prev.map((r, idx) => (idx === i ? { url, status: 'ok', response: res } : r)));
+        }
+      } catch (e) {
+        failed++;
+        const { message, code, requestId } = resolveErrorMessage(e);
+        track({ event: 'resolve.fail', platform: rowPlatform, code, ms: Date.now() - started });
+        setRows((prev) =>
+          prev.map((r, idx) =>
+            idx === i ? { url, status: 'error', message, code, requestId } : r,
+          ),
+        );
+      }
+      setBulkProgress({ done: i + 1, total: valid.length });
+      if (i < valid.length - 1) {
+        await new Promise((res) => setTimeout(res, BULK_DELAY_MS));
+      }
+    }
+
+    setLoading(false);
+    setBulkProgress(null);
+    track({ event: 'bulk.complete', ok, failed, total: valid.length });
+    if (failed === 0) {
+      toast.show(format(t.bulk.doneAllOk, { total: valid.length }));
+    } else {
+      toast.show(format(t.bulk.doneSomeFailed, { ok, total: valid.length }), 'info');
+    }
+  }
+
+  const hasBulkContent = rows.length > 0;
+  const stepCompleted = mode === 'single'
+    ? !!(result && result.mediaItems.length > 0)
+    : hasBulkContent && !loading;
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col">
@@ -203,14 +301,21 @@ export function App() {
               <StepHeader
                 step={2}
                 label={t.steps.pasteAndDownload}
-                state={result && result.mediaItems.length > 0 ? 'completed' : 'active'}
+                state={stepCompleted ? 'completed' : 'active'}
               />
+              <ModeToggle mode={mode} disabled={loading} onChange={handleModeChange} />
               <UrlForm
                 platform={platform}
                 loading={loading}
+                mode={mode}
                 onSubmit={handleSubmit}
-                onPlatformSwitch={handlePlatformChange}
+                onPlatformSwitch={mode === 'single' ? handlePlatformChange : undefined}
               />
+              {bulkProgress && (
+                <p className="text-xs text-fg-muted" aria-live="polite">
+                  {format(t.bulk.processingProgress, bulkProgress)}
+                </p>
+              )}
             </section>
 
             {/* Feedback blocks live immediately under the form they belong
@@ -218,7 +323,7 @@ export function App() {
                 hid the error/result below the fold on every viewport once
                 the guide expanded — users clicked Download and saw nothing
                 change. */}
-            {error && (
+            {mode === 'single' && error && (
               <div ref={errorRef} className="scroll-mt-24">
                 <ErrorAlert
                   message={error.message}
@@ -229,7 +334,7 @@ export function App() {
               </div>
             )}
 
-            {loading && !result && (
+            {mode === 'single' && loading && !result && (
               <section className="space-y-3" aria-live="polite" aria-busy="true">
                 <span className="sr-only">{t.result.loading}</span>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
@@ -239,7 +344,7 @@ export function App() {
               </section>
             )}
 
-            {result && result.mediaItems.length > 0 && (
+            {mode === 'single' && result && result.mediaItems.length > 0 && (
               <section ref={resultsRef} className="space-y-3 scroll-mt-24">
                 <ResultsHeader
                   platform={result.platform}
@@ -266,12 +371,26 @@ export function App() {
               </section>
             )}
 
+            {mode === 'bulk' && hasBulkContent && (
+              <section className="space-y-4">
+                {rows.map((row, i) => (
+                  <BulkResultRow key={`${row.url}-${i}`} row={row} index={i} />
+                ))}
+              </section>
+            )}
+
             {/* Guide is preparatory content — only useful BEFORE submit.
                 Hiding it once feedback exists (error/loading/result) keeps
                 step 3 from getting visually shoved around by content that
                 lands between step 2 and step 3. Returns when the user
                 clears the error or switches platforms. */}
-            {!error && !loading && !result && (
+            {mode === 'single' && !error && !loading && !result && (
+              <section className="space-y-3">
+                <StepHeader step={3} label={t.steps.guide} state="pending" />
+                <CollapsibleGuide platform={platform} />
+              </section>
+            )}
+            {mode === 'bulk' && !loading && !hasBulkContent && (
               <section className="space-y-3">
                 <StepHeader step={3} label={t.steps.guide} state="pending" />
                 <CollapsibleGuide platform={platform} />
@@ -301,6 +420,50 @@ export function App() {
           <p className="text-xs text-fg-muted">{t.app.footer}</p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function ModeToggle({
+  mode,
+  disabled,
+  onChange,
+}: {
+  mode: Mode;
+  disabled: boolean;
+  onChange: (m: Mode) => void;
+}) {
+  const { t } = useI18n();
+  const opts: { value: Mode; label: string }[] = [
+    { value: 'single', label: t.bulk.modeSingle },
+    { value: 'bulk', label: t.bulk.modeBulk },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label={t.steps.pasteAndDownload}
+      className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-raised/40 p-1"
+    >
+      {opts.map((o) => {
+        const active = mode === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            disabled={disabled}
+            onClick={() => onChange(o.value)}
+            className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed ${
+              active
+                ? 'bg-accent/15 text-accent border border-accent/30'
+                : 'text-fg-secondary hover:text-fg'
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

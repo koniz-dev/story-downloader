@@ -22,3 +22,9 @@ export interface ResolveError {
   error: string;
   code?: string;
 }
+
+export type BulkRow =
+  | { url: string; status: 'pending' }
+  | { url: string; status: 'loading' }
+  | { url: string; status: 'ok'; response: ResolveResponse }
+  | { url: string; status: 'error'; message: string; code?: string; requestId?: string };

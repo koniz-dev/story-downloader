@@ -114,6 +114,15 @@ export const en: Translations = {
     downloadStarted: 'Download started',
     downloadingAll: 'Downloading {n} files',
   },
+  bulk: {
+    modeSingle: 'Single URL',
+    modeBulk: 'Multiple URLs',
+    textareaPlaceholder: 'Paste one URL per line',
+    noValidUrls: 'No valid URLs found. Paste Instagram, Facebook, or TikTok links, one per line.',
+    processingProgress: 'Processing {done} of {total}…',
+    doneAllOk: 'All {total} URLs downloaded',
+    doneSomeFailed: '{ok} of {total} succeeded — see errors below',
+  },
   alert: {
     close: 'Close',
     code: 'code',
