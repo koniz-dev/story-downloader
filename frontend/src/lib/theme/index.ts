@@ -16,13 +16,13 @@ const STORAGE_KEY = 'sd.theme';
 const LIGHT_BG = '#fafafc';
 const DARK_BG = '#020617';
 
-function readStored(): Theme {
+export function readStored(): Theme {
   if (typeof localStorage === 'undefined') return 'system';
   const v = localStorage.getItem(STORAGE_KEY);
   return v === 'light' || v === 'dark' || v === 'system' ? v : 'system';
 }
 
-function systemPrefersDark(): boolean {
+export function systemPrefersDark(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -30,7 +30,7 @@ function systemPrefersDark(): boolean {
   );
 }
 
-function resolve(theme: Theme): Resolved {
+export function resolve(theme: Theme): Resolved {
   if (theme === 'dark') return 'dark';
   if (theme === 'light') return 'light';
   return systemPrefersDark() ? 'dark' : 'light';
@@ -40,7 +40,7 @@ function resolve(theme: Theme): Resolved {
 // media="(prefers-color-scheme: …)">` tags would still let the OS-preferred
 // color win. Replace them with a single overriding meta. When user switches
 // back to 'system', restore the dual tags so the OS preference is honored.
-function syncThemeColorMeta(theme: Theme, resolved: Resolved) {
+export function syncThemeColorMeta(theme: Theme, resolved: Resolved) {
   if (typeof document === 'undefined') return;
   const head = document.head;
   const existing = Array.from(
