@@ -116,6 +116,7 @@ function buildHead(locale, viteAssets) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="Content-Security-Policy" content="${escAttr(csp)}" />
     <link rel="icon" type="image/svg+xml" href="${rootRel}favicon.svg" />
+    <link rel="manifest" href="${rootRel}manifest.webmanifest" />
     <meta name="theme-color" content="#fafafc" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
     <script src="${rootRel}theme-init.js"></script>
