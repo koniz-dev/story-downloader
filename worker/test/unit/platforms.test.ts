@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { detectInstagramKind } from '../../src/platforms/instagram';
 import { detectFacebookKind } from '../../src/platforms/facebook';
-import { detectTikTokKind, isTikTokPageUrl } from '../../src/platforms/tiktok';
+import {
+  detectTikTokKind,
+  extractPhotoItems,
+  isTikTokPageUrl,
+} from '../../src/platforms/tiktok';
 
 function u(href: string): URL {
   return new URL(href);
@@ -79,6 +83,78 @@ describe('detectTikTokKind', () => {
     'https://vm.tiktok.com/ABC/', // short link host
   ])('null for non-kind %s', (href) => {
     expect(detectTikTokKind(u(href))).toBeNull();
+  });
+});
+
+describe('extractPhotoItems', () => {
+  it('picks the first usable https entry from urlList per photo', () => {
+    const itemStruct = {
+      imagePost: {
+        images: [
+          {
+            imageURL: {
+              urlList: [
+                'https://p16-sign-va.tiktokcdn.com/a.jpg',
+                'https://p77-sign-va.tiktokcdn.com/a.jpg',
+                'https://p19-sign-va.tiktokcdn.com/a.jpg',
+              ],
+            },
+          },
+          {
+            imageURL: {
+              urlList: [
+                'https://p16-sign-va.tiktokcdn.com/b.jpg',
+                'https://p77-sign-va.tiktokcdn.com/b.jpg',
+                'https://p19-sign-va.tiktokcdn.com/b.jpg',
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const items = extractPhotoItems(itemStruct);
+    expect(items).toEqual([
+      { type: 'image', url: 'https://p16-sign-va.tiktokcdn.com/a.jpg' },
+      { type: 'image', url: 'https://p16-sign-va.tiktokcdn.com/b.jpg' },
+    ]);
+  });
+
+  it('skips non-https / empty entries and falls through later in urlList', () => {
+    const itemStruct = {
+      imagePost: {
+        images: [
+          {
+            imageURL: {
+              urlList: [
+                '',
+                'http://insecure.example.com/a.jpg',
+                'https://p19-sign-va.tiktokcdn.com/a.jpg',
+                'https://p77-sign-va.tiktokcdn.com/a.jpg',
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const items = extractPhotoItems(itemStruct);
+    expect(items).toEqual([
+      { type: 'image', url: 'https://p19-sign-va.tiktokcdn.com/a.jpg' },
+    ]);
+  });
+
+  it('drops photos with no usable url', () => {
+    const itemStruct = {
+      imagePost: {
+        images: [
+          { imageURL: { urlList: [] } },
+          { imageURL: { urlList: ['https://ok.tiktokcdn.com/x.jpg'] } },
+        ],
+      },
+    };
+    const items = extractPhotoItems(itemStruct);
+    expect(items).toEqual([
+      { type: 'image', url: 'https://ok.tiktokcdn.com/x.jpg' },
+    ]);
   });
 });
 

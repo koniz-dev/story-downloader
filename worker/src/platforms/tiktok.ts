@@ -333,17 +333,31 @@ function extractCover(itemStruct: TikTokItemStruct): string | null {
   );
 }
 
-function extractPhotoItems(itemStruct: TikTokItemStruct): MediaItem[] {
+export function extractPhotoItems(itemStruct: TikTokItemStruct): MediaItem[] {
   const images = itemStruct.imagePost?.images;
   if (!Array.isArray(images)) return [];
   const items: MediaItem[] = [];
   for (const img of images) {
-    const url =
-      pickString(img, ['imageURL', 'urlList', '0']) ??
-      pickString(img, ['imageURL', 'urlList', '1']);
+    const url = pickFirstUsableUrl(img);
     if (url) items.push({ type: 'image', url });
   }
   return items;
+}
+
+// Per photo TikTok returns several CDN variants under imageURL.urlList. The
+// previous code only tried indexes 0 and 1, dropping the rest. Semantics are
+// "one URL per photo, pick the best CDN variant" (not "expand each variant
+// into its own MediaItem"), so iterate the full array and take the first https
+// URL we find.
+function pickFirstUsableUrl(img: unknown): string | null {
+  const list = pick(img, ['imageURL', 'urlList']);
+  if (!Array.isArray(list)) return null;
+  for (const entry of list) {
+    if (typeof entry === 'string' && /^https:\/\//i.test(entry)) {
+      return entry;
+    }
+  }
+  return null;
 }
 
 function ogFallback(html: string, kind: ContentKind, finalUrl: string): ResolveResult {
