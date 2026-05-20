@@ -23,9 +23,3 @@ frontend/public/og/
 
 # Claude Code
 .claude/settings.local.json
-
-# Internal audit notes (kept local only — documents recent fixes by
-# code path which is fine for the maintainer, but no value in shipping
-# to the public repo)
-implementation-notes.md
-implementation-notes.html
