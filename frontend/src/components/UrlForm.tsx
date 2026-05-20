@@ -9,6 +9,9 @@ interface Props {
   platform: Platform;
   loading: boolean;
   mode?: 'single' | 'bulk';
+  // Seed the URL input — used by the Web Share Target flow to pre-fill on
+  // launch. Read once as the initial value; later changes are ignored.
+  initialUrl?: string;
   onSubmit: (url: string) => void;
   onPlatformSwitch?: (next: Platform) => void;
 }
@@ -19,18 +22,34 @@ const PLACEHOLDERS: Record<Platform, string> = {
   tiktok: 'https://www.tiktok.com/@user/video/...',
 };
 
-export function UrlForm({ platform, loading, mode = 'single', onSubmit, onPlatformSwitch }: Props) {
+export function UrlForm({ platform, loading, mode = 'single', initialUrl, onSubmit, onPlatformSwitch }: Props) {
   if (mode === 'bulk') {
     return <BulkUrlForm platform={platform} loading={loading} onSubmit={onSubmit} />;
   }
-  return <SingleUrlForm platform={platform} loading={loading} onSubmit={onSubmit} onPlatformSwitch={onPlatformSwitch} />;
+  return (
+    <SingleUrlForm
+      platform={platform}
+      loading={loading}
+      initialUrl={initialUrl}
+      onSubmit={onSubmit}
+      onPlatformSwitch={onPlatformSwitch}
+    />
+  );
 }
 
-function SingleUrlForm({ platform, loading, onSubmit, onPlatformSwitch }: Omit<Props, 'mode'>) {
+function SingleUrlForm({
+  platform,
+  loading,
+  initialUrl,
+  onSubmit,
+  onPlatformSwitch,
+}: Omit<Props, 'mode'>) {
   const { t } = useI18n();
   const toast = useToast();
-  const [url, setUrl] = useState('');
-  const [touched, setTouched] = useState(false);
+  const [url, setUrl] = useState(initialUrl ?? '');
+  // Pre-fill from share-target counts as "touched" so validation hints
+  // (and the enabled Download button) appear immediately.
+  const [touched, setTouched] = useState(!!initialUrl);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const detectedPlatform = url ? detectPlatform(url) : null;

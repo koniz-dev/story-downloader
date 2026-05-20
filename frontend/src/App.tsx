@@ -16,6 +16,7 @@ import { format, useI18n } from './lib/i18n';
 import { useToast } from './lib/toast';
 import { downloadMedia } from './lib/download';
 import { detectPlatform } from './lib/platform';
+import { readShareTargetUrl } from './lib/share-target';
 import { scrollIntoView } from './lib/scroll';
 import { useScrolled } from './lib/useScrolled';
 import type { BulkRow, Platform, ResolveResponse } from './types';
@@ -41,6 +42,23 @@ export function App() {
   const [error, setError] = useState<{ message: string; code?: string; requestId?: string } | null>(null);
   const [rows, setRows] = useState<BulkRow[]>([]);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [sharedUrl, setSharedUrl] = useState<string | null>(null);
+
+  // Web Share Target entry: when the OS share sheet hands us a URL on
+  // launch, detect its platform, pre-fill the form, and strip the query
+  // params so a reload doesn't re-fire the same share.
+  useEffect(() => {
+    const shared = readShareTargetUrl();
+    if (!shared) return;
+    const detected = detectPlatform(shared);
+    if (!detected) return;
+    setPlatform(detected);
+    setSharedUrl(shared);
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+    }
+    track({ event: 'share-target.received', platform: detected });
+  }, []);
 
   // Track which platform value transitioned the user from "no selection" so
   // we only scroll the form into view when it's a fresh pick — not on every
@@ -308,6 +326,7 @@ export function App() {
                 platform={platform}
                 loading={loading}
                 mode={mode}
+                initialUrl={mode === 'single' ? sharedUrl ?? undefined : undefined}
                 onSubmit={handleSubmit}
                 onPlatformSwitch={mode === 'single' ? handlePlatformChange : undefined}
               />

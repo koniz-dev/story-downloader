@@ -5,7 +5,8 @@ type TrackEvent =
   | { event: 'resolve.fail'; platform: string; code?: string; ms: number }
   | { event: 'download.click'; platform: string; kind: string; type: string }
   | { event: 'bulk.start'; count: number }
-  | { event: 'bulk.complete'; ok: number; failed: number; total: number };
+  | { event: 'bulk.complete'; ok: number; failed: number; total: number }
+  | { event: 'share-target.received'; platform: string };
 
 export function track(payload: TrackEvent): void {
   if (typeof console !== 'undefined') {
