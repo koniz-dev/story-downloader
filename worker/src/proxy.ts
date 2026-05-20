@@ -25,7 +25,11 @@ const ALLOWED_HOSTS = [
   /\.tiktok\.com$/i,
 ] as const;
 
-export async function proxyMedia(targetUrl: string, filename: string | null): Promise<Response> {
+export async function proxyMedia(
+  targetUrl: string,
+  filename: string | null,
+  inboundRequest?: Request,
+): Promise<Response> {
   let url: URL;
   try {
     url = new URL(targetUrl);
@@ -47,7 +51,7 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
   }
 
   if (isTikTokPageUrl(url)) {
-    return await proxyTikTokVideo(targetUrl, filename);
+    return await proxyTikTokVideo(targetUrl, filename, inboundRequest);
   }
 
   const referer = url.hostname.includes('instagram')
@@ -56,14 +60,21 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
       ? 'https://www.tiktok.com/'
       : 'https://www.facebook.com/';
 
+  const upstreamHeaders: Record<string, string> = {
+    Referer: referer,
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  };
+  // Forward Range so the browser can resume large-video downloads. Without
+  // this the CDN always returns 200 with the full body and the client has
+  // to restart from byte 0 on any network blip.
+  const inboundRange = inboundRequest?.headers.get('Range');
+  if (inboundRange) upstreamHeaders.Range = inboundRange;
+
   let upstream: Response;
   try {
     upstream = await fetch(targetUrl, {
-      headers: {
-        Referer: referer,
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      },
+      headers: upstreamHeaders,
       redirect: 'follow',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -92,7 +103,11 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
 // TikTok video CDN URLs are session-bound: the playAddr signature is tied to
 // the cookies set by the page that produced it. We re-fetch the page here so
 // the playAddr we extract and the cookies we forward come from the same fetch.
-async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promise<Response> {
+async function proxyTikTokVideo(
+  pageUrl: string,
+  filename: string | null,
+  inboundRequest?: Request,
+): Promise<Response> {
   const { html, cookies } = await fetchTikTokPageCached(pageUrl);
   const itemStruct = parseTikTokItemStruct(html);
   const playAddr = itemStruct ? extractPlayAddr(itemStruct) : null;
@@ -104,14 +119,18 @@ async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promi
     );
   }
 
+  const upstreamHeaders: Record<string, string> = {
+    'User-Agent': TIKTOK_BROWSER_UA,
+    Referer: 'https://www.tiktok.com/',
+    ...(cookies ? { Cookie: cookies } : {}),
+  };
+  const inboundRange = inboundRequest?.headers.get('Range');
+  if (inboundRange) upstreamHeaders.Range = inboundRange;
+
   let upstream: Response;
   try {
     upstream = await fetch(playAddr, {
-      headers: {
-        'User-Agent': TIKTOK_BROWSER_UA,
-        Referer: 'https://www.tiktok.com/',
-        ...(cookies ? { Cookie: cookies } : {}),
-      },
+      headers: upstreamHeaders,
       redirect: 'follow',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -167,12 +186,22 @@ function streamingResponse(upstream: Response, filename: string | null): Respons
   if (contentLength) headers.set('Content-Length', contentLength);
   headers.set('Cache-Control', 'private, max-age=0, no-store');
 
+  // Range-resume support: forward the upstream's range metadata so the
+  // browser can pick up where it left off on a dropped large-video download.
+  // Accept-Ranges advertises capability even on 200 responses; Content-Range
+  // and the 206 status only appear when upstream honored a Range request.
+  const acceptRanges = upstream.headers.get('Accept-Ranges');
+  if (acceptRanges) headers.set('Accept-Ranges', acceptRanges);
+  const contentRange = upstream.headers.get('Content-Range');
+  if (contentRange) headers.set('Content-Range', contentRange);
+
   const safeName = sanitizeFilename(filename) ?? defaultFilename(contentType);
   headers.set('Content-Disposition', `attachment; filename="${safeName}"`);
 
   // upstream.body is non-null here — checked by callers.
   const body = boundedStream(upstream.body!, MAX_PROXY_BYTES);
-  return new Response(body, { status: 200, headers });
+  const status = upstream.status === 206 ? 206 : 200;
+  return new Response(body, { status, headers });
 }
 
 function upstreamFetchError(e: unknown, code: string = 'UPSTREAM_ERROR'): ResolveError {

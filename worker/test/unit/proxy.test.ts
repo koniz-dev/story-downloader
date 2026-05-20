@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { sanitizeFilename } from '../../src/proxy';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { proxyMedia, sanitizeFilename } from '../../src/proxy';
 
 describe('sanitizeFilename', () => {
   it('returns null for null/empty input', () => {
@@ -37,5 +37,70 @@ describe('sanitizeFilename', () => {
 
   it('returns null if everything was stripped', () => {
     expect(sanitizeFilename('";\\')).toBeNull();
+  });
+});
+
+describe('proxyMedia range passthrough', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('forwards inbound Range header to upstream fetch', async () => {
+    const seen: { range?: string | null } = {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_input: RequestInfo, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        seen.range = headers.get('Range');
+        return new Response('partial', {
+          status: 206,
+          headers: {
+            'Content-Type': 'video/mp4',
+            'Content-Range': 'bytes 0-6/100',
+            'Accept-Ranges': 'bytes',
+            'Content-Length': '7',
+          },
+        });
+      }),
+    );
+
+    const inbound = new Request('https://worker.local/api/proxy?url=x', {
+      headers: { Range: 'bytes=0-6' },
+    });
+    const res = await proxyMedia(
+      'https://scontent.cdninstagram.com/video.mp4',
+      'clip.mp4',
+      inbound,
+    );
+
+    expect(seen.range).toBe('bytes=0-6');
+    expect(res.status).toBe(206);
+    expect(res.headers.get('Content-Range')).toBe('bytes 0-6/100');
+    expect(res.headers.get('Accept-Ranges')).toBe('bytes');
+  });
+
+  it('passes 200 + Accept-Ranges through when no Range was requested', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('full', {
+            status: 200,
+            headers: {
+              'Content-Type': 'video/mp4',
+              'Accept-Ranges': 'bytes',
+              'Content-Length': '4',
+            },
+          }),
+      ),
+    );
+
+    const res = await proxyMedia(
+      'https://scontent.cdninstagram.com/video.mp4',
+      'clip.mp4',
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Accept-Ranges')).toBe('bytes');
+    expect(res.headers.get('Content-Range')).toBeNull();
   });
 });
