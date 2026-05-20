@@ -11,17 +11,19 @@
 
 ## Why use it
 
-- **🎬 Instagram Reel & Post downloader** — Reels, photo posts, carousels, IGTV.
-- **📘 Facebook video downloader** — public posts, Reels, Watch videos, fb.watch
-  short links.
-- **🎵 TikTok video downloader** — public videos, photo slideshows, vm.tiktok.com
-  and tiktok.com/t/ short links. Watermarked.
-- **⚡ One-click downloads** — paste the URL, get a direct save-to-disk button.
-- **🔒 Private by design** — runs entirely in your browser + a stateless
-  serverless Worker. No accounts, no tracking pixels, no history kept.
-- **💸 Free forever** — frontend on GitHub Pages, backend on Cloudflare Workers'
-  free tier. No ads, no paywall.
-- **🌐 Multilingual UI** — auto-detects your browser language; switch any time.
+- **🎬 All three networks** — Instagram (Reel / Post / IGTV), Facebook
+  (Post / Video / Reel / fb.watch), TikTok (video / photo / short links,
+  watermarked). Full support table below.
+- **⚡ One link, one click** — paste, hit download. No signup, no software.
+- **📋 Bulk mode** — paste many URLs at once and the app works through them
+  one at a time.
+- **📱 Installable PWA** — add it to your home screen and the Android or
+  iOS share sheet can hand URLs straight to the app.
+- **🎨 System / light / dark theme** — your call, persisted locally.
+- **🔒 Private by design** — your browser plus a stateless serverless Worker.
+  No accounts, no tracking pixels, no history kept.
+- **💸 Free forever** — GitHub Pages frontend + Cloudflare Workers' free tier.
+  No ads, no paywall.
 
 ## Supported content
 
@@ -75,21 +77,9 @@ Full setup, deployment, and i18n instructions in
   social-media cache refresh).
 - 🔌 [Worker API reference](./docs/api.md) — endpoints, error codes, host
   whitelist.
-- ✨ [Feature list](./docs/features.md) — full inventory of what's shipped
-  and what's on the roadmap (more detailed than the marketing roadmap below).
+- ✨ [Feature list](./docs/features.md) — full inventory of what's shipped.
 - ⚠ [Known limitations](./docs/limitations.md) — Stories, rate limits, what
   *won't* work and why.
-
-## Roadmap
-
-- [x] Instagram Reel / Post / IGTV
-- [x] Facebook Post / Video / Reel / fb.watch
-- [x] TikTok video / photo slideshow / short links (watermarked)
-- [x] Per-platform guide UI with platform selector
-- [x] i18n: English, Vietnamese, Japanese, Korean, Chinese
-- [x] Dark / light mode toggle
-- [x] Bulk download from multiple URLs
-- [x] PWA + mobile share-target
 
 ## Tech stack
 
