@@ -88,8 +88,8 @@ Full setup, deployment, and i18n instructions in
 - [x] Per-platform guide UI with platform selector
 - [x] i18n: English, Vietnamese, Japanese, Korean, Chinese
 - [x] Dark / light mode toggle
-- [ ] Bulk download from multiple URLs
-- [ ] PWA + mobile share-target
+- [x] Bulk download from multiple URLs
+- [x] PWA + mobile share-target
 
 ## Tech stack
 
