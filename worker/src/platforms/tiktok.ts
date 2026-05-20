@@ -48,6 +48,74 @@ export interface TikTokFetchResult {
   cookies: string;
 }
 
+// /api/resolve and /api/proxy each call fetchTikTokPage for the same URL within
+// seconds of each other (resolve, then user clicks Download). On the hot path
+// the second fetch always wins the same HTML, so cache it briefly to halve
+// egress and conserve the CF Workers rate-limit budget against TikTok.
+//
+// We cache the parsed payload (html + finalUrl + cookies), not the raw
+// Response. The redirect chain + status are needed for Slardar/region-fallback
+// detection in fetchTikTokPage and there's no clean way to round-trip those
+// through a Response stored in caches.default; on miss we always run the full
+// detection path, on hit the upstream response was already known-good when
+// stored.
+const TIKTOK_PAGE_CACHE_TTL_S = 30;
+
+function normalizeTikTokCacheKey(rawUrl: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  parsed.hash = '';
+  parsed.hostname = parsed.hostname.toLowerCase();
+  // Tracking params TikTok appends but that don't affect which video resolves.
+  // Conservative list: anything we're not sure about stays in the key.
+  const tracking = ['_t', '_r', 'is_from_webapp', 'sender_device', 'lang'];
+  for (const k of tracking) parsed.searchParams.delete(k);
+  return parsed.toString();
+}
+
+function cacheRequestFor(normalizedUrl: string): Request {
+  return new Request(
+    `https://tt-cache.local/page/${encodeURIComponent(normalizedUrl)}`,
+    { method: 'GET' },
+  );
+}
+
+export async function fetchTikTokPageCached(rawUrl: string): Promise<TikTokFetchResult> {
+  const normalized = normalizeTikTokCacheKey(rawUrl);
+  const cache = (globalThis as { caches?: CacheStorage }).caches?.default;
+  if (!normalized || !cache) {
+    return await fetchTikTokPage(rawUrl);
+  }
+  const cacheReq = cacheRequestFor(normalized);
+  const hit = await cache.match(cacheReq);
+  if (hit) {
+    try {
+      const payload = (await hit.json()) as TikTokFetchResult;
+      if (payload && typeof payload.html === 'string') return payload;
+    } catch {
+      // fall through to refetch
+    }
+  }
+  const fresh = await fetchTikTokPage(rawUrl);
+  try {
+    const body = JSON.stringify(fresh);
+    const cacheRes = new Response(body, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': `max-age=${TIKTOK_PAGE_CACHE_TTL_S}`,
+      },
+    });
+    await cache.put(cacheReq, cacheRes);
+  } catch {
+    // caching is best-effort; never let a cache failure break the request
+  }
+  return fresh;
+}
+
 export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult> {
   let res: Response;
   try {
@@ -193,7 +261,7 @@ export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
-  const { html, finalUrl } = await fetchTikTokPage(rawUrl);
+  const { html, finalUrl } = await fetchTikTokPageCached(rawUrl);
 
   let finalUrlObj = url;
   try {
