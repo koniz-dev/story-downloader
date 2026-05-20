@@ -50,13 +50,16 @@ The token needs the `Workers Scripts:Edit` permission scope.
 
 ## 5. Configure CORS on the Worker
 
-By default, `localhost:5173` and any `*.github.io` origin are allowed (the
-wildcard means forks just work — no edit needed). If you serve the frontend
-from a custom domain, edit `ALLOWED_ORIGINS` in `worker/wrangler.toml`:
+`ALLOWED_ORIGINS` in `worker/wrangler.toml` is a comma-separated list of
+origins the Worker will set `Access-Control-Allow-Origin` for. The default
+list covers local dev (`http://localhost:5173`) and this repo's primary
+Pages origin. **Forks must replace the GitHub Pages entry with their own
+Pages URL** — `*.github.io` is intentionally not whitelisted because anyone
+can register a GitHub Pages subdomain and that would be an open door.
 
 ```toml
 [vars]
-ALLOWED_ORIGINS = "http://localhost:5173,https://*.github.io,https://yourdomain.com"
+ALLOWED_ORIGINS = "http://localhost:5173,https://<your-user>.github.io,https://yourdomain.com"
 ```
 
 Then redeploy:
@@ -71,7 +74,8 @@ cd worker && npx wrangler deploy
   domain, then configure DNS per
   [GitHub's Pages custom-domain guide](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site).
 - For the Worker: bind a custom route in **Cloudflare → Workers → Triggers**.
-  Update `VITE_WORKER_URL` and `ALLOWED_ORIGINS` accordingly.
+  Update `VITE_WORKER_URL` and `ALLOWED_ORIGINS` accordingly (replace the
+  GitHub Pages entry).
 - For SEO: add a repository **Variable** named `SITE_URL` with the new origin
   (e.g. `https://yourdomain.com`). The build step picks it up and bakes it
   into every locale's canonical, hreflang, OG, and `sitemap.xml`. To wire it

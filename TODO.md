@@ -53,11 +53,11 @@ a single platform.
 - [x] **P2** Forward `Content-Range`/`Accept-Ranges` in `proxyMedia` — shipped 2026-05-20; inbound `Range` forwarded to upstream, 206 + Content-Range passed back to client; covered by 2 unit tests.
 - [x] **P2** Bump `compatibility_date` in `wrangler.toml` — shipped 2026-05-20; `2024-11-20` → `2026-01-15` (~4 months shakeout).
 - [x] **P2** Include `requestId` in `track.ts` events — shipped 2026-05-20; optional field on `resolve.ok` + `resolve.fail`, plumbed through both single + bulk submit handlers.
-- [x] **P2** Belt-and-braces: assert `request.cf` presence before trusting `cf-connecting-ip` — shipped 2026-05-20; `checkRateLimit` skips rate limiting entirely when `request.cf` is missing (dev frictionless, prod unchanged since CF always sets it).
+- [x] **P2** Belt-and-braces: assert `request.cf` presence before trusting `cf-connecting-ip` — attempted 2026-05-20 (`d3c2ef5`) and reverted in `<this commit>`. The gate collapsed all integration-test IPs into one bucket (`vitest-pool-workers` leaves `request.cf` null), without adding real prod protection — CF strips `cf-connecting-ip` from inbound requests at the edge. Original `?? 'unknown'` fallback restored.
 
 - [x] **P1** "Download all" affordance in bulk mode — shipped 2026-05-20; button appears when ≥2 successful rows, reuses 250ms stagger from single-mode handleDownloadAll.
 - [x] **P1** Memoize `proxyUrl(item.url)` in `MediaCard` — shipped 2026-05-20; one `useMemo` keyed on `item.url`, both poster + video src reuse the same string.
-- [x] **P1** Drop hardcoded GitHub Pages origin from `ALLOWED_ORIGINS` — shipped 2026-05-20; added `https://*.github.io` wildcard to env var (CORS already supported `*` globs in `worker/src/cors.ts`, just had to use them).
+- [x] **P1** Drop hardcoded GitHub Pages origin from `ALLOWED_ORIGINS` — shipped 2026-05-20; documented the fork override in `docs/deployment.md` and clarified the wrangler.toml comment. Tried adding a `*.github.io` wildcard first (`62a3b4d`); reverted in `<this commit>` because any GitHub Pages subdomain is registrable, which makes the wildcard an open-door CORS bypass (caught by `test/integration/api.test.ts:179`).
 - [x] **P2** Dark / light / system theme toggle — shipped 2026-05-20 (reconciled; full impl already in `lib/theme` + `ThemeToggle`).
 - [x] **P2** Bulk download from multiple URLs — shipped 2026-05-20; mode toggle on the form, sequential resolve with 500ms politeness gap, per-URL result rows.
 - [x] **P2** PWA + mobile share-target — shipped 2026-05-20; web manifest with `share_target`, URL pre-fill on launch via `readShareTargetUrl()`, query-string stripped via `history.replaceState`.

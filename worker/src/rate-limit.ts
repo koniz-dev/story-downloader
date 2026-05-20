@@ -19,16 +19,14 @@ const ROUTE_LIMITS: Record<string, Limit> = {
 export async function checkRateLimit(request: Request, route: string): Promise<void> {
   const limit = ROUTE_LIMITS[route];
   if (!limit) return;
-  // Defense-in-depth: cf-connecting-ip is set by the edge for traffic that
-  // actually traversed Cloudflare. A request that didn't go through CF
-  // (local dev, oddly-routed mirror) has no `request.cf` object — in that
-  // case we can't trust any IP-bearing header, so collapse every untrusted
-  // caller into one shared bucket. Same effect as today's `??  'unknown'`
-  // fallback, but proof against a forged cf-connecting-ip on a non-CF path.
-  const trustedCfEdge = request.cf != null;
-  const ip = trustedCfEdge
-    ? (request.headers.get('cf-connecting-ip') ?? 'unknown')
-    : 'unknown';
+  // cf-connecting-ip is set by Cloudflare's edge before the Worker runs and
+  // is stripped/overridden on ingress — clients can't forge it on a real CF
+  // path. We previously gated on `request.cf != null` as belt-and-braces,
+  // but that broke the integration suite (vitest-pool-workers leaves `cf`
+  // null, so every test IP collapsed into one bucket) without adding real
+  // protection in prod. Falling back to 'unknown' when the header is missing
+  // is enough.
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
   const bucket = Math.floor(Date.now() / limit.windowMs);
   const windowSec = Math.floor(limit.windowMs / 1000);
 

@@ -4,8 +4,9 @@ compatibility_date = "2026-01-15"
 compatibility_flags = ["nodejs_compat"]
 
 # Allowed origins for CORS — comma-separated, no spaces. Supports `*` glob
-# patterns (see worker/src/cors.ts). The `https://*.github.io` entry lets
-# any fork's GitHub Pages origin work without editing this file; replace or
-# extend with a custom domain if you serve the frontend from somewhere else.
+# patterns (see worker/src/cors.ts), but do NOT broaden to `*.github.io` —
+# anyone can register a GitHub Pages subdomain, so that wildcard is an open
+# door. Forks: replace `koniz-dev.github.io` with your own Pages origin (or
+# your custom domain).
 [vars]
-ALLOWED_ORIGINS = "http://localhost:5173,https://*.github.io,https://koniz-dev.github.io"
+ALLOWED_ORIGINS = "http://localhost:5173,https://koniz-dev.github.io"
