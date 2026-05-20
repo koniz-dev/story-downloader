@@ -114,6 +114,15 @@ export const zh: Translations = {
     downloadStarted: '已开始下载',
     downloadingAll: '正在下载 {n} 个文件',
   },
+  bulk: {
+    modeSingle: '单个 URL',
+    modeBulk: '多个 URL',
+    textareaPlaceholder: '每行粘贴一个 URL',
+    noValidUrls: '未找到有效 URL。请将 Instagram、Facebook 或 TikTok 链接每行一个粘贴。',
+    processingProgress: '正在处理 {done}/{total}…',
+    doneAllOk: '已下载全部 {total} 个 URL',
+    doneSomeFailed: '{total} 个中 {ok} 个成功 — 详见下方错误',
+  },
   alert: {
     close: '关闭',
     code: '错误码',

@@ -89,6 +89,15 @@ export interface Translations {
     downloadStarted: string;
     downloadingAll: string;
   };
+  bulk: {
+    modeSingle: string;
+    modeBulk: string;
+    textareaPlaceholder: string;
+    noValidUrls: string;
+    processingProgress: string;
+    doneAllOk: string;
+    doneSomeFailed: string;
+  };
   alert: {
     close: string;
     code: string;

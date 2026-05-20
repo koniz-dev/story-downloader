@@ -8,6 +8,7 @@ import { scrollFocusedIntoView } from '../lib/scroll';
 interface Props {
   platform: Platform;
   loading: boolean;
+  mode?: 'single' | 'bulk';
   onSubmit: (url: string) => void;
   onPlatformSwitch?: (next: Platform) => void;
 }
@@ -18,7 +19,14 @@ const PLACEHOLDERS: Record<Platform, string> = {
   tiktok: 'https://www.tiktok.com/@user/video/...',
 };
 
-export function UrlForm({ platform, loading, onSubmit, onPlatformSwitch }: Props) {
+export function UrlForm({ platform, loading, mode = 'single', onSubmit, onPlatformSwitch }: Props) {
+  if (mode === 'bulk') {
+    return <BulkUrlForm platform={platform} loading={loading} onSubmit={onSubmit} />;
+  }
+  return <SingleUrlForm platform={platform} loading={loading} onSubmit={onSubmit} onPlatformSwitch={onPlatformSwitch} />;
+}
+
+function SingleUrlForm({ platform, loading, onSubmit, onPlatformSwitch }: Omit<Props, 'mode'>) {
   const { t } = useI18n();
   const toast = useToast();
   const [url, setUrl] = useState('');
@@ -176,6 +184,111 @@ export function UrlForm({ platform, loading, onSubmit, onPlatformSwitch }: Props
       {touched && url.length > 0 && detectedPlatform === platform && !validKind && (
         <p className="text-xs text-warning">{t.form.error.unknownKind}</p>
       )}
+    </form>
+  );
+}
+
+function BulkUrlForm({ platform, loading, onSubmit }: Omit<Props, 'mode' | 'onPlatformSwitch'>) {
+  const { t } = useI18n();
+  const toast = useToast();
+  const [text, setText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const canSubmit = !loading && text.trim().length > 0;
+
+  async function handlePaste() {
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.readText) {
+      toast.show(t.form.pasteFailed, 'error');
+      textareaRef.current?.focus();
+      return;
+    }
+    try {
+      const clip = (await navigator.clipboard.readText()).trim();
+      if (!clip) {
+        textareaRef.current?.focus();
+        return;
+      }
+      setText((prev) => (prev.trim().length === 0 ? clip : `${prev.replace(/\s+$/, '')}\n${clip}`));
+      textareaRef.current?.focus();
+    } catch {
+      toast.show(t.form.pasteFailed, 'error');
+      textareaRef.current?.focus();
+    }
+  }
+
+  function handleClear() {
+    setText('');
+    textareaRef.current?.focus();
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit(text);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
+      <label htmlFor="sd-url-textarea" className="block text-sm font-medium text-fg-secondary">
+        {format(t.form.label, { platform: t.platform[platform].name })}
+      </label>
+      <div className="glass rounded-xl focus-within:ring-2 focus-within:ring-accent-ring transition-shadow motion-reduce:transition-none">
+        <textarea
+          ref={textareaRef}
+          id="sd-url-textarea"
+          rows={5}
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder={t.bulk.textareaPlaceholder}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onFocus={() => scrollFocusedIntoView(textareaRef.current)}
+          className="w-full bg-transparent rounded-xl px-4 py-3 font-mono text-sm text-fg placeholder:text-fg-muted focus:outline-none disabled:opacity-60 resize-y min-h-[140px]"
+          disabled={loading}
+        />
+      </div>
+      <div className="flex flex-col xs:flex-row gap-2">
+        <div className="flex gap-2 xs:flex-1">
+          {text.trim().length > 0 ? (
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 h-[44px] text-sm font-medium text-fg-secondary hover:text-fg rounded-lg border border-border-subtle bg-bg-raised/40 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none disabled:opacity-40"
+            >
+              <ClearIcon className="h-4 w-4" />
+              {t.form.clear}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handlePaste}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 h-[44px] text-sm font-medium text-fg-secondary hover:text-fg rounded-lg border border-border-subtle bg-bg-raised/40 hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none disabled:opacity-40"
+            >
+              <PasteIcon className="h-4 w-4" aria-hidden="true" />
+              {t.form.paste}
+            </button>
+          )}
+        </div>
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="btn-shimmer rounded-xl bg-gradient-to-br from-[rgb(var(--neon-1))] via-[rgb(var(--neon-2))] to-[rgb(var(--neon-3))] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 px-6 py-3 min-h-[52px] font-semibold text-white shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-[filter,transform] motion-reduce:transition-none active:scale-[0.98] motion-reduce:active:scale-100"
+        >
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <Spinner /> {t.form.submitting}
+              </>
+            ) : (
+              t.form.submit
+            )}
+          </span>
+        </button>
+      </div>
     </form>
   );
 }

@@ -114,6 +114,15 @@ export const vi: Translations = {
     downloadStarted: 'Đã bắt đầu tải',
     downloadingAll: 'Đang tải {n} tệp',
   },
+  bulk: {
+    modeSingle: 'Một URL',
+    modeBulk: 'Nhiều URL',
+    textareaPlaceholder: 'Dán mỗi dòng một URL',
+    noValidUrls: 'Không tìm thấy URL hợp lệ. Hãy dán link Instagram, Facebook hoặc TikTok, mỗi dòng một link.',
+    processingProgress: 'Đang xử lý {done}/{total}…',
+    doneAllOk: 'Đã tải xong tất cả {total} URL',
+    doneSomeFailed: '{ok}/{total} thành công — xem lỗi bên dưới',
+  },
   alert: {
     close: 'Đóng',
     code: 'code',
