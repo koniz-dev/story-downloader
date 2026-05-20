@@ -93,20 +93,29 @@ function normalizeTikTokCacheKey(rawUrl: string): string | null {
   return parsed.toString();
 }
 
-function cacheRequestFor(normalizedUrl: string): Request {
+function cacheRequestFor(normalizedUrl: string, callerIp: string): Request {
   return new Request(
-    `https://tt-cache.local/page/${encodeURIComponent(normalizedUrl)}`,
+    `https://tt-cache.local/page/${encodeURIComponent(callerIp)}/${encodeURIComponent(normalizedUrl)}`,
     { method: 'GET' },
   );
 }
 
-export async function fetchTikTokPageCached(rawUrl: string): Promise<TikTokFetchResult> {
+export async function fetchTikTokPageCached(
+  rawUrl: string,
+  callerIp: string | null,
+): Promise<TikTokFetchResult> {
   const normalized = normalizeTikTokCacheKey(rawUrl);
   const cache = (globalThis as { caches?: CacheStorage }).caches?.default;
-  if (!normalized || !cache) {
+  // The cached payload includes upstream Set-Cookie (msToken, tt_chain_token,
+  // etc.). Those are session-binding — sharing them across callers would leak
+  // session identity AND accelerate TikTok's per-cookie rate limits. So the
+  // cache key MUST include a per-caller identifier; when we don't have one
+  // (header missing, oddly-routed request), skip the cache entirely rather
+  // than fall back to a globally-shared bucket.
+  if (!normalized || !cache || !callerIp) {
     return await fetchTikTokPage(rawUrl);
   }
-  const cacheReq = cacheRequestFor(normalized);
+  const cacheReq = cacheRequestFor(normalized, callerIp);
   const hit = await cache.match(cacheReq);
   if (hit) {
     try {
@@ -201,7 +210,11 @@ export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult
 // We require two hits before classifying (paranoia: TikTok could in theory
 // embed `slardar_us_waf` in legitimate logging on a normal page).
 export function isWafChallenge(html: string): boolean {
-  if (html.length > 8 * 1024) return false; // real video pages are >> 100 KB
+  // Real TikTok video pages are >> 100 KB. Slardar challenge HTML has been
+  // observed at ~3-6 KB historically, but the format has grown over the
+  // years; 64 KB gives runway for future variants without false-positiving
+  // on legitimate pages.
+  if (html.length > 64 * 1024) return false;
   const markers = [
     'slardar_us_waf',
     '_wafchallengeid',
@@ -261,7 +274,10 @@ export function extractPlayAddr(itemStruct: TikTokItemStruct): string | null {
   );
 }
 
-export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
+export async function resolveTikTok(
+  rawUrl: string,
+  callerIp: string | null = null,
+): Promise<ResolveResult> {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -277,7 +293,7 @@ export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
-  const { html, finalUrl } = await fetchTikTokPageCached(rawUrl);
+  const { html, finalUrl } = await fetchTikTokPageCached(rawUrl, callerIp);
 
   let finalUrlObj = url;
   try {

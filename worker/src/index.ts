@@ -75,13 +75,16 @@ router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestCont
     throw new ResolveError('URL is not Instagram, Facebook, or TikTok', 'UNSUPPORTED_PLATFORM');
   }
 
+  // Caller IP threads into the TikTok cache key so the upstream Set-Cookie
+  // jar (msToken / tt_chain_token) is never shared across users.
+  const callerIp = request.headers.get('cf-connecting-ip');
   try {
     const result =
       platform === 'instagram'
         ? await resolveInstagram(body.url)
         : platform === 'facebook'
           ? await resolveFacebook(body.url)
-          : await resolveTikTok(body.url);
+          : await resolveTikTok(body.url, callerIp);
     logEvent('resolve.ok', {
       requestId: ctx.requestId,
       platform,

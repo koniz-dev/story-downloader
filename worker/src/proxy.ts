@@ -108,7 +108,8 @@ async function proxyTikTokVideo(
   filename: string | null,
   inboundRequest?: Request,
 ): Promise<Response> {
-  const { html, cookies } = await fetchTikTokPageCached(pageUrl);
+  const callerIp = inboundRequest?.headers.get('cf-connecting-ip') ?? null;
+  const { html, cookies } = await fetchTikTokPageCached(pageUrl, callerIp);
   const itemStruct = parseTikTokItemStruct(html);
   const playAddr = itemStruct ? extractPlayAddr(itemStruct) : null;
   if (!playAddr) {
