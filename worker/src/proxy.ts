@@ -2,7 +2,7 @@ import { ResolveError } from './types';
 import {
   TIKTOK_BROWSER_UA,
   extractPlayAddr,
-  fetchTikTokPage,
+  fetchTikTokPageCached,
   isTikTokPageUrl,
   parseTikTokItemStruct,
 } from './platforms/tiktok';
@@ -93,7 +93,7 @@ export async function proxyMedia(targetUrl: string, filename: string | null): Pr
 // the cookies set by the page that produced it. We re-fetch the page here so
 // the playAddr we extract and the cookies we forward come from the same fetch.
 async function proxyTikTokVideo(pageUrl: string, filename: string | null): Promise<Response> {
-  const { html, cookies } = await fetchTikTokPage(pageUrl);
+  const { html, cookies } = await fetchTikTokPageCached(pageUrl);
   const itemStruct = parseTikTokItemStruct(html);
   const playAddr = itemStruct ? extractPlayAddr(itemStruct) : null;
   if (!playAddr) {

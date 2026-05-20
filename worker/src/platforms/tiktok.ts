@@ -42,10 +42,94 @@ export function isTikTokPageUrl(url: URL): boolean {
   return false;
 }
 
+// The proxy re-fetches this URL, so it must round-trip back through
+// isTikTokPageUrl. Some redirects land on canonical-but-unparseable forms
+// (e.g. m.tiktok.com/v/<id> -> www.tiktok.com/@/video/<id>?_r=1 with an
+// empty username); fall back to the original input in those cases. This
+// helper has regressed twice in git history, so it lives as a named pure
+// function with its own tests.
+export function chooseProxyPageUrl(input: string, finalUrl: string): string {
+  let finalUrlObj: URL;
+  try {
+    finalUrlObj = new URL(finalUrl);
+  } catch {
+    return input;
+  }
+  return isTikTokPageUrl(finalUrlObj) ? finalUrl : input;
+}
+
 export interface TikTokFetchResult {
   html: string;
   finalUrl: string;
   cookies: string;
+}
+
+// /api/resolve and /api/proxy each call fetchTikTokPage for the same URL within
+// seconds of each other (resolve, then user clicks Download). On the hot path
+// the second fetch always wins the same HTML, so cache it briefly to halve
+// egress and conserve the CF Workers rate-limit budget against TikTok.
+//
+// We cache the parsed payload (html + finalUrl + cookies), not the raw
+// Response. The redirect chain + status are needed for Slardar/region-fallback
+// detection in fetchTikTokPage and there's no clean way to round-trip those
+// through a Response stored in caches.default; on miss we always run the full
+// detection path, on hit the upstream response was already known-good when
+// stored.
+const TIKTOK_PAGE_CACHE_TTL_S = 30;
+
+function normalizeTikTokCacheKey(rawUrl: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  parsed.hash = '';
+  parsed.hostname = parsed.hostname.toLowerCase();
+  // Tracking params TikTok appends but that don't affect which video resolves.
+  // Conservative list: anything we're not sure about stays in the key.
+  const tracking = ['_t', '_r', 'is_from_webapp', 'sender_device', 'lang'];
+  for (const k of tracking) parsed.searchParams.delete(k);
+  return parsed.toString();
+}
+
+function cacheRequestFor(normalizedUrl: string): Request {
+  return new Request(
+    `https://tt-cache.local/page/${encodeURIComponent(normalizedUrl)}`,
+    { method: 'GET' },
+  );
+}
+
+export async function fetchTikTokPageCached(rawUrl: string): Promise<TikTokFetchResult> {
+  const normalized = normalizeTikTokCacheKey(rawUrl);
+  const cache = (globalThis as { caches?: CacheStorage }).caches?.default;
+  if (!normalized || !cache) {
+    return await fetchTikTokPage(rawUrl);
+  }
+  const cacheReq = cacheRequestFor(normalized);
+  const hit = await cache.match(cacheReq);
+  if (hit) {
+    try {
+      const payload = (await hit.json()) as TikTokFetchResult;
+      if (payload && typeof payload.html === 'string') return payload;
+    } catch {
+      // fall through to refetch
+    }
+  }
+  const fresh = await fetchTikTokPage(rawUrl);
+  try {
+    const body = JSON.stringify(fresh);
+    const cacheRes = new Response(body, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': `max-age=${TIKTOK_PAGE_CACHE_TTL_S}`,
+      },
+    });
+    await cache.put(cacheReq, cacheRes);
+  } catch {
+    // caching is best-effort; never let a cache failure break the request
+  }
+  return fresh;
 }
 
 export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult> {
@@ -193,7 +277,7 @@ export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
     );
   }
 
-  const { html, finalUrl } = await fetchTikTokPage(rawUrl);
+  const { html, finalUrl } = await fetchTikTokPageCached(rawUrl);
 
   let finalUrlObj = url;
   try {
@@ -203,11 +287,7 @@ export async function resolveTikTok(rawUrl: string): Promise<ResolveResult> {
   }
   const kind: ContentKind = detectTikTokKind(finalUrlObj) ?? earlyKind ?? 'video';
 
-  // The proxy re-fetches this URL, so it must round-trip back through
-  // isTikTokPageUrl. Some redirects land on canonical-but-unparseable forms
-  // (e.g. m.tiktok.com/v/<id> → www.tiktok.com/@/video/<id>?_r=1 with an
-  // empty username); fall back to the original input in those cases.
-  const proxyPageUrl = isTikTokPageUrl(finalUrlObj) ? finalUrl : rawUrl;
+  const proxyPageUrl = chooseProxyPageUrl(rawUrl, finalUrl);
 
   const itemStruct = parseTikTokItemStruct(html);
   if (!itemStruct) {
@@ -265,17 +345,31 @@ function extractCover(itemStruct: TikTokItemStruct): string | null {
   );
 }
 
-function extractPhotoItems(itemStruct: TikTokItemStruct): MediaItem[] {
+export function extractPhotoItems(itemStruct: TikTokItemStruct): MediaItem[] {
   const images = itemStruct.imagePost?.images;
   if (!Array.isArray(images)) return [];
   const items: MediaItem[] = [];
   for (const img of images) {
-    const url =
-      pickString(img, ['imageURL', 'urlList', '0']) ??
-      pickString(img, ['imageURL', 'urlList', '1']);
+    const url = pickFirstUsableUrl(img);
     if (url) items.push({ type: 'image', url });
   }
   return items;
+}
+
+// Per photo TikTok returns several CDN variants under imageURL.urlList. The
+// previous code only tried indexes 0 and 1, dropping the rest. Semantics are
+// "one URL per photo, pick the best CDN variant" (not "expand each variant
+// into its own MediaItem"), so iterate the full array and take the first https
+// URL we find.
+function pickFirstUsableUrl(img: unknown): string | null {
+  const list = pick(img, ['imageURL', 'urlList']);
+  if (!Array.isArray(list)) return null;
+  for (const entry of list) {
+    if (typeof entry === 'string' && /^https:\/\//i.test(entry)) {
+      return entry;
+    }
+  }
+  return null;
 }
 
 function ogFallback(html: string, kind: ContentKind, finalUrl: string): ResolveResult {

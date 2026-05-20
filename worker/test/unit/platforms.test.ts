@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { detectInstagramKind } from '../../src/platforms/instagram';
 import { detectFacebookKind } from '../../src/platforms/facebook';
-import { detectTikTokKind, isTikTokPageUrl } from '../../src/platforms/tiktok';
+import {
+  chooseProxyPageUrl,
+  detectTikTokKind,
+  extractPhotoItems,
+  isTikTokPageUrl,
+} from '../../src/platforms/tiktok';
 
 function u(href: string): URL {
   return new URL(href);
@@ -79,6 +84,116 @@ describe('detectTikTokKind', () => {
     'https://vm.tiktok.com/ABC/', // short link host
   ])('null for non-kind %s', (href) => {
     expect(detectTikTokKind(u(href))).toBeNull();
+  });
+});
+
+describe('extractPhotoItems', () => {
+  it('picks the first usable https entry from urlList per photo', () => {
+    const itemStruct = {
+      imagePost: {
+        images: [
+          {
+            imageURL: {
+              urlList: [
+                'https://p16-sign-va.tiktokcdn.com/a.jpg',
+                'https://p77-sign-va.tiktokcdn.com/a.jpg',
+                'https://p19-sign-va.tiktokcdn.com/a.jpg',
+              ],
+            },
+          },
+          {
+            imageURL: {
+              urlList: [
+                'https://p16-sign-va.tiktokcdn.com/b.jpg',
+                'https://p77-sign-va.tiktokcdn.com/b.jpg',
+                'https://p19-sign-va.tiktokcdn.com/b.jpg',
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const items = extractPhotoItems(itemStruct);
+    expect(items).toEqual([
+      { type: 'image', url: 'https://p16-sign-va.tiktokcdn.com/a.jpg' },
+      { type: 'image', url: 'https://p16-sign-va.tiktokcdn.com/b.jpg' },
+    ]);
+  });
+
+  it('skips non-https / empty entries and falls through later in urlList', () => {
+    const itemStruct = {
+      imagePost: {
+        images: [
+          {
+            imageURL: {
+              urlList: [
+                '',
+                'http://insecure.example.com/a.jpg',
+                'https://p19-sign-va.tiktokcdn.com/a.jpg',
+                'https://p77-sign-va.tiktokcdn.com/a.jpg',
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const items = extractPhotoItems(itemStruct);
+    expect(items).toEqual([
+      { type: 'image', url: 'https://p19-sign-va.tiktokcdn.com/a.jpg' },
+    ]);
+  });
+
+  it('drops photos with no usable url', () => {
+    const itemStruct = {
+      imagePost: {
+        images: [
+          { imageURL: { urlList: [] } },
+          { imageURL: { urlList: ['https://ok.tiktokcdn.com/x.jpg'] } },
+        ],
+      },
+    };
+    const items = extractPhotoItems(itemStruct);
+    expect(items).toEqual([
+      { type: 'image', url: 'https://ok.tiktokcdn.com/x.jpg' },
+    ]);
+  });
+});
+
+describe('chooseProxyPageUrl', () => {
+  it('uses finalUrl when it matches the input URL', () => {
+    const u = 'https://www.tiktok.com/@user/video/1234567890';
+    expect(chooseProxyPageUrl(u, u)).toBe(u);
+  });
+
+  it('uses finalUrl when redirect lands on a different host but still a TikTok page', () => {
+    const input = 'https://vm.tiktok.com/ABCxyz/';
+    const finalUrl = 'https://www.tiktok.com/@user/video/1234567890';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(finalUrl);
+  });
+
+  it('falls back to input when finalUrl is the regional WAF/about fallback page', () => {
+    // Detection upstream throws TIKTOK_RATE_LIMITED for /hk/about, but if the
+    // signal ever drifts we still must not point the proxy at the about page.
+    const input = 'https://www.tiktok.com/@user/video/1234567890';
+    const finalUrl = 'https://www.tiktok.com/hk/about';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
+  });
+
+  it('falls back to input when finalUrl is canonical-but-unparseable (empty username)', () => {
+    const input = 'https://m.tiktok.com/v/1234567890';
+    const finalUrl = 'https://www.tiktok.com/@/video/1234567890?_r=1';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
+  });
+
+  it('falls back to input when finalUrl is unparseable', () => {
+    const input = 'https://www.tiktok.com/@user/video/1234567890';
+    expect(chooseProxyPageUrl(input, 'not a url')).toBe(input);
+  });
+
+  it('falls back to input when finalUrl is off-platform', () => {
+    const input = 'https://www.tiktok.com/@user/video/1234567890';
+    const finalUrl = 'https://www.example.com/blocked';
+    expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
   });
 });
 
