@@ -83,7 +83,7 @@ Full setup, deployment, and i18n instructions in
 
 ## Tech stack
 
-- **Frontend:** React 18, TypeScript, Vite 8, Tailwind CSS 3
+- **Frontend:** React 19, TypeScript, Vite 8, Tailwind CSS 3
 - **Backend:** Cloudflare Workers (TypeScript, Wrangler 4)
 - **Hosting:** GitHub Pages (frontend) + Cloudflare Workers free tier (backend)
 - **CI:** GitHub Actions (`deploy-pages.yml`, `deploy-worker.yml`)
