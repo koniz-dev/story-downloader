@@ -343,3 +343,67 @@ describe('Unknown routes', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('POST /api/track', () => {
+  it('returns 204 for a valid known-prefix event', async () => {
+    const res = await SELF.fetch(jsonRequest('/api/track', { event: 'platform.select', platform: 'instagram' }, '203.0.113.40'));
+    expect(res.status).toBe(204);
+  });
+
+  it('rejects missing event with INVALID_TRACK_EVENT', async () => {
+    const res = await SELF.fetch(jsonRequest('/api/track', {}, '203.0.113.41'));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_TRACK_EVENT');
+  });
+
+  it('rejects unknown-prefix event names', async () => {
+    const res = await SELF.fetch(jsonRequest('/api/track', { event: 'haxor.attempt' }, '203.0.113.42'));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_TRACK_EVENT');
+  });
+
+  it('rejects non-object JSON bodies', async () => {
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '203.0.113.43' },
+        body: JSON.stringify('just-a-string'),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_TRACK_EVENT');
+  });
+
+  it('rate-limits the 121st request from one IP', async () => {
+    const ip = '203.0.113.44';
+    function req(): Request {
+      return jsonRequest('/api/track', { event: 'platform.select', platform: 'tiktok' }, ip);
+    }
+    for (let i = 0; i < 120; i++) {
+      const res = await SELF.fetch(req());
+      expect(res.status).toBe(204);
+    }
+    const blocked = await SELF.fetch(req());
+    expect(blocked.status).toBe(429);
+    const body = (await blocked.json()) as { code: string; params?: { route?: string } };
+    expect(body.code).toBe('RATE_LIMITED');
+    expect(body.params?.route).toBe('/api/track');
+  });
+
+  it('OPTIONS preflight from allowed origin returns 204 + ACAO', async () => {
+    const res = await SELF.fetch(
+      new Request(`${BASE}/api/track`, {
+        method: 'OPTIONS',
+        headers: { Origin: ALLOWED_ORIGIN, 'Access-Control-Request-Method': 'POST' },
+      }),
+    );
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe(ALLOWED_ORIGIN);
+  });
+
+  it('GET /api/track returns 405 with Allow: POST', async () => {
+    const res = await SELF.fetch(`${BASE}/api/track`);
+    expect(res.status).toBe(405);
+    expect(res.headers.get('Allow')).toContain('POST');
+  });
+});
