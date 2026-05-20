@@ -50,13 +50,13 @@ The token needs the `Workers Scripts:Edit` permission scope.
 
 ## 5. Configure CORS on the Worker
 
-By default, `localhost:5173` and any `*.github.io` origin are allowed. If you
-serve the frontend from a custom domain, edit `ALLOWED_ORIGINS` in
-`worker/wrangler.toml`:
+By default, `localhost:5173` and any `*.github.io` origin are allowed (the
+wildcard means forks just work — no edit needed). If you serve the frontend
+from a custom domain, edit `ALLOWED_ORIGINS` in `worker/wrangler.toml`:
 
 ```toml
 [vars]
-ALLOWED_ORIGINS = "http://localhost:5173,https://your-user.github.io,https://yourdomain.com"
+ALLOWED_ORIGINS = "http://localhost:5173,https://*.github.io,https://yourdomain.com"
 ```
 
 Then redeploy:

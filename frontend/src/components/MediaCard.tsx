@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { MediaItem, Platform, ContentKind } from '../types';
 import { downloadMedia } from '../lib/download';
 import { proxyUrl } from '../lib/api';
@@ -23,7 +23,8 @@ export function MediaCard({ item, platform, kind, index = 0 }: Props) {
   // video" entry from the controls menu so our Download CTA below is the
   // single, unambiguous download path.
   const [playing, setPlaying] = useState(false);
-  const previewSrc = item.thumbnail ?? proxyUrl(item.url);
+  const proxiedUrl = useMemo(() => proxyUrl(item.url), [item.url]);
+  const previewSrc = item.thumbnail ?? proxiedUrl;
 
   function handleDownload() {
     downloadMedia(item, platform, kind);
@@ -48,7 +49,7 @@ export function MediaCard({ item, platform, kind, index = 0 }: Props) {
           <>
             <video
               ref={videoRef}
-              src={proxyUrl(item.url)}
+              src={proxiedUrl}
               poster={item.thumbnail}
               playsInline
               preload="metadata"

@@ -143,6 +143,25 @@ export function App() {
     });
   }
 
+  function handleBulkDownloadAll() {
+    const queue = rows.flatMap((row) =>
+      row.status === 'ok'
+        ? row.response.mediaItems.map((item) => ({
+            item,
+            platform: row.response.platform,
+            kind: row.response.kind,
+          }))
+        : [],
+    );
+    if (queue.length === 0) return;
+    toast.show(format(t.toast.downloadingAll, { n: queue.length }));
+    // Same 250ms stagger as single-result Download all — keeps the browser
+    // from suppressing the bulk after the first permission prompt.
+    queue.forEach((q, i) => {
+      window.setTimeout(() => downloadMedia(q.item, q.platform, q.kind), i * 250);
+    });
+  }
+
   function resolveErrorMessage(e: unknown): { message: string; code?: string; requestId?: string } {
     const code = e instanceof ApiError ? e.code : undefined;
     const params = e instanceof ApiError ? e.params : undefined;
@@ -247,6 +266,8 @@ export function App() {
   }
 
   const hasBulkContent = rows.length > 0;
+  const bulkOkRowCount = rows.reduce((n, r) => (r.status === 'ok' ? n + 1 : n), 0);
+  const showBulkDownloadAll = !loading && bulkOkRowCount >= 2;
   const stepCompleted = mode === 'single'
     ? !!(result && result.mediaItems.length > 0)
     : hasBulkContent && !loading;
@@ -392,6 +413,19 @@ export function App() {
 
             {mode === 'bulk' && hasBulkContent && (
               <section className="space-y-4">
+                {showBulkDownloadAll && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleBulkDownloadAll}
+                      disabled={loading}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 hover:bg-accent/20 px-3 py-1.5 min-h-[36px] text-xs font-semibold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring transition-colors motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <BulkDownloadAllIcon className="h-3.5 w-3.5" />
+                      {t.result.downloadAll}
+                    </button>
+                  </div>
+                )}
                 {rows.map((row, i) => (
                   <BulkResultRow key={`${row.url}-${i}`} row={row} index={i} />
                 ))}
@@ -510,6 +544,27 @@ function ValueChip({
       <DotIcon className="h-1.5 w-1.5" />
       {label}
     </li>
+  );
+}
+
+function BulkDownloadAllIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3v10" />
+      <path d="m8 9 4 4 4-4" />
+      <path d="M5 21h14" />
+      <path d="M3 17h2" />
+      <path d="M19 17h2" />
+    </svg>
   );
 }
 
