@@ -25,14 +25,14 @@ Use `- [~]` for in-progress. Within each epic, list open items first
 
 ## Facebook
 
-- [ ] **P1** Test the `inlineHd playable_url` JSON parser — zero coverage, silent-breaks when Meta changes payload shape. `worker/src/platforms/facebook.ts:117`.
-- [ ] **P2** Broaden `unescapeJson` decode set (match Instagram's `/`, `\"`, …) — narrow set returns broken URLs in edge cases. `worker/src/platforms/facebook.ts:155`.
-- [ ] **P2** Re-detect kind from final `res.url` after fetch — `/share/<token>` is always tagged `post` even when redirect lands on `/reel/` or `/videos/`. `worker/src/platforms/facebook.ts:26`.
+- [x] **P1** Test the `inlineHd playable_url` JSON parser — shipped 2026-05-20; `facebook-extract.test.ts` covers og:video, og:image, inline `playable_url(_quality_hd)`, HTML-entity decode, empty HTML.
+- [x] **P2** Broaden `unescapeJson` decode set — shipped 2026-05-20; single-pass tokenizer covers `&`, `/`, `=`, `\/`, `\"`, `\\` (chain would double-decode).
+- [x] **P2** Re-detect kind from final `res.url` after fetch — shipped 2026-05-20; `fetchHtml` now returns `{ html, finalUrl }`, new pure `reconcileKind(initialUrl, finalUrl, initialKind)` only re-detects when input path is `/share/`.
 
 ## Instagram
 
-- [ ] **P1** Short-circuit story branch before HTML fetch — currently fetches then bails on empty items; wastes a slow upstream call. `worker/src/platforms/instagram.ts:32-55`.
-- [ ] **P2** Add tests for `extractFromHtml` and `parseEmbed` — only `detectInstagramKind` is covered; these are the fragile scraping surface. `worker/test/unit/platforms.test.ts`.
+- [x] **P1** Short-circuit story branch before HTML fetch — shipped 2026-05-20; throws `INSTAGRAM_STORY_BLOCKED` (422) immediately with the existing user-facing message; saves a slow upstream fetch.
+- [x] **P2** Tests for `extractFromHtml` and `parseEmbed` — shipped 2026-05-20; `instagram-extract.test.ts` adds 17 cases covering OG fallbacks, JSON unescape, and `parseEmbed`'s `video_url`/`display_url`/`thumbnail_src` precedence.
 
 ## TikTok
 
