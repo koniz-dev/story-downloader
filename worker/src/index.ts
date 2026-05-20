@@ -16,26 +16,46 @@ const MAX_RESOLVE_BODY_BYTES = 8 * 1024;
 
 const router = Router();
 
+// 30s edge cache on probe endpoints so a fleet of health checkers doesn't cold-
+// hit the origin every probe. `timestamp` and `uptimeSec` on /api/health drift
+// within the window — acceptable for liveness signals; if you need exact wall-
+// clock per-probe, bypass cache at the probe layer.
+const PROBE_CACHE_CONTROL = 'public, s-maxage=30';
+
 router.get('/api/health', (_request: Request, env: Env) =>
-  json({
-    ok: true,
-    service: SERVICE_NAME,
-    version: SERVICE_VERSION,
-    commit: env.BUILD_COMMIT ?? null,
-    builtAt: env.BUILD_AT ?? null,
-    timestamp: new Date().toISOString(),
-    uptimeSec: uptimeSeconds(),
-  }),
+  cachedJson(
+    {
+      ok: true,
+      service: SERVICE_NAME,
+      version: SERVICE_VERSION,
+      commit: env.BUILD_COMMIT ?? null,
+      builtAt: env.BUILD_AT ?? null,
+      timestamp: new Date().toISOString(),
+      uptimeSec: uptimeSeconds(),
+    },
+    PROBE_CACHE_CONTROL,
+  ),
 );
 
 router.get('/api/version', (_request: Request, env: Env) =>
-  json({
-    service: SERVICE_NAME,
-    version: SERVICE_VERSION,
-    commit: env.BUILD_COMMIT ?? null,
-    builtAt: env.BUILD_AT ?? null,
-  }),
+  cachedJson(
+    {
+      service: SERVICE_NAME,
+      version: SERVICE_VERSION,
+      commit: env.BUILD_COMMIT ?? null,
+      builtAt: env.BUILD_AT ?? null,
+    },
+    PROBE_CACHE_CONTROL,
+  ),
 );
+
+function cachedJson(body: unknown, cacheControl: string): Response {
+  const res = json(body);
+  // json() returns a 200; only attach the cache hint on success. 4xx/5xx
+  // never flow through this helper.
+  res.headers.set('Cache-Control', cacheControl);
+  return res;
+}
 
 router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestContext) => {
   await checkRateLimit(request, '/api/resolve');
