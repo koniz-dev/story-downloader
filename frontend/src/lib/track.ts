@@ -20,23 +20,23 @@ export function track(payload: TrackEvent): void {
   const url = `${TRACK_URL}/api/track`;
   const body = JSON.stringify(payload);
   try {
-    // sendBeacon is designed for fire-and-forget telemetry — survives page
-    // unload, doesn't block paint. Some browsers reject the call (queue
-    // full, blocked by an extension) — wrap in its own try so a thrown
-    // sendBeacon doesn't skip the fetch fallback below.
-    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      try {
-        const blob = new Blob([body], { type: 'application/json' });
-        if (navigator.sendBeacon(url, blob)) return;
-      } catch {
-        // Fall through to fetch.
-      }
-    }
+    // fetch+keepalive is MDN's documented replacement for sendBeacon — it
+    // also survives page unload but, unlike sendBeacon, lets us set
+    // credentials: 'omit'. sendBeacon hardcodes credentials: 'include',
+    // which trips a CORS preflight failure against the analytics worker
+    // (worker intentionally does not return Access-Control-Allow-
+    // Credentials: true since the endpoint is anonymous). Worse, the
+    // sendBeacon API "succeeds" at queue time and fails the network call
+    // silently — there's no way to fall back to fetch on CORS rejection.
+    // Content-Type text/plain is CORS-safelisted so the request stays
+    // simple (no preflight); the worker parses the body as JSON regardless
+    // of the Content-Type header.
     fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body,
       keepalive: true,
+      credentials: 'omit',
     }).catch(() => {
       // Analytics never blocks UX. Swallow.
     });

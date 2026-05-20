@@ -19,14 +19,11 @@ afterEach(() => {
 describe('track()', () => {
   let consoleLog: ReturnType<typeof vi.spyOn>;
   let fetchMock: ReturnType<typeof vi.fn>;
-  let sendBeaconMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
     fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchMock);
-    sendBeaconMock = vi.fn(() => true);
-    vi.stubGlobal('navigator', { sendBeacon: sendBeaconMock });
   });
 
   it('always logs the payload to console', async () => {
@@ -38,61 +35,46 @@ describe('track()', () => {
     );
   });
 
-  it('uses sendBeacon when available and the call returns true', async () => {
-    const track = await loadTrack(WORKER);
-    track({ event: 'platform.select', platform: 'tiktok' });
-    expect(sendBeaconMock).toHaveBeenCalledTimes(1);
-    const [url, blob] = sendBeaconMock.mock.calls[0];
-    expect(url).toBe(`${WORKER}/api/track`);
-    expect(blob).toBeInstanceOf(Blob);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('falls back to fetch with keepalive when sendBeacon returns false', async () => {
-    sendBeaconMock.mockReturnValue(false);
+  it('posts via fetch with text/plain + credentials omit + keepalive', async () => {
     const track = await loadTrack(WORKER);
     track({ event: 'resolve.start', platform: 'facebook' });
-    expect(sendBeaconMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${WORKER}/api/track`);
-    expect((init as RequestInit).method).toBe('POST');
-    expect((init as RequestInit).keepalive).toBe(true);
-    expect((init as RequestInit).body).toBe(
+    expect(init.method).toBe('POST');
+    // text/plain is CORS-safelisted — no preflight, no ACAC check.
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe(
+      'text/plain;charset=UTF-8',
+    );
+    // credentials:'omit' is the whole point of dropping sendBeacon (which
+    // hardcoded credentials:'include' and tripped CORS preflight).
+    expect(init.credentials).toBe('omit');
+    expect(init.keepalive).toBe(true);
+    expect(init.body).toBe(
       JSON.stringify({ event: 'resolve.start', platform: 'facebook' }),
     );
   });
 
-  it('falls back to fetch when sendBeacon throws', async () => {
-    sendBeaconMock.mockImplementation(() => {
-      throw new Error('queue full');
-    });
-    const track = await loadTrack(WORKER);
-    track({ event: 'bulk.start', count: 5 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('falls back to fetch when navigator.sendBeacon is undefined', async () => {
-    vi.stubGlobal('navigator', {});
-    const track = await loadTrack(WORKER);
-    track({ event: 'bulk.start', count: 3 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not beacon or fetch when VITE_WORKER_URL is empty (console-only)', async () => {
+  it('does not fetch when VITE_WORKER_URL is empty (console-only)', async () => {
     const track = await loadTrack('');
     track({ event: 'platform.select', platform: 'instagram' });
     expect(consoleLog).toHaveBeenCalledTimes(1);
-    expect(sendBeaconMock).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('swallows fetch rejections (analytics never throws into UX)', async () => {
-    sendBeaconMock.mockReturnValue(false);
     fetchMock.mockRejectedValue(new Error('network down'));
     const track = await loadTrack(WORKER);
     expect(() =>
       track({ event: 'resolve.fail', platform: 'tiktok', code: 'BOOM', ms: 100 }),
     ).not.toThrow();
+  });
+
+  it('swallows synchronous fetch throw (e.g. blocked by extension)', async () => {
+    fetchMock.mockImplementation(() => {
+      throw new Error('blocked by extension');
+    });
+    const track = await loadTrack(WORKER);
+    expect(() => track({ event: 'bulk.start', count: 3 })).not.toThrow();
   });
 });
