@@ -72,6 +72,22 @@ describe('readStored', () => {
     localStorage.setItem('sd.theme', 'mauve');
     expect(readStored()).toBe('system');
   });
+
+  it('returns "system" when localStorage.getItem throws (Safari private mode, Firefox block-cookies)', () => {
+    // Safari private mode and Firefox with "block cookies" both throw on
+    // Storage access — the Storage object exists but its methods reject.
+    // The previous implementation would crash the whole app because the
+    // error bubbled out of useState's initializer.
+    const originalGetItem = window.localStorage.getItem;
+    window.localStorage.getItem = () => {
+      throw new Error('SecurityError: storage access denied');
+    };
+    try {
+      expect(readStored()).toBe('system');
+    } finally {
+      window.localStorage.getItem = originalGetItem;
+    }
+  });
 });
 
 describe('systemPrefersDark', () => {

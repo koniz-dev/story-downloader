@@ -42,6 +42,14 @@ export function isTikTokPageUrl(url: URL): boolean {
   return false;
 }
 
+// Used after `redirect: 'follow'` to confirm the final host is in the TikTok
+// family before we read the body or harvest Set-Cookie. Looser than
+// isTikTokPageUrl (which also checks the path shape) — a redirect can legally
+// land on www.tiktok.com/foo/bar without being a page URL.
+export function isTikTokHost(hostname: string): boolean {
+  return /(?:^|\.)tiktok\.com$/i.test(hostname);
+}
+
 // The proxy re-fetches this URL, so it must round-trip back through
 // isTikTokPageUrl. Some redirects land on canonical-but-unparseable forms
 // (e.g. m.tiktok.com/v/<id> -> www.tiktok.com/@/video/<id>?_r=1 with an
@@ -177,12 +185,36 @@ export async function fetchTikTokPage(rawUrl: string): Promise<TikTokFetchResult
       status: res.status,
     });
   }
+  // Defence-in-depth: refuse to parse HTML (and harvest Set-Cookie) from a
+  // redirect that landed off the TikTok host family. `redirect: 'follow'`
+  // means the initial host check on rawUrl tells us nothing about where the
+  // response actually came from; without this gate a doctored redirect could
+  // feed attacker-controlled HTML through parseTikTokItemStruct, which we
+  // would then dereference as a playAddr.
+  let finalUrlObj: URL;
+  try {
+    finalUrlObj = new URL(res.url);
+  } catch {
+    throw new ResolveError(
+      'TikTok returned an unparseable final URL',
+      'TIKTOK_FETCH_FAILED',
+      502,
+    );
+  }
+  if (!isTikTokHost(finalUrlObj.hostname)) {
+    throw new ResolveError(
+      `TikTok redirect landed off-platform on ${finalUrlObj.hostname}`,
+      'HOST_NOT_ALLOWED',
+      502,
+      { host: finalUrlObj.hostname },
+    );
+  }
   const cookies = collectCookies(res.headers);
   // When TikTok rate-limits a CF Workers egress IP it soft-blocks by 302'ing
   // every video URL to a regional landing page (/hk/about, /sg/about, etc.).
   // Body is 200 OK with no itemInfo, so the parser would otherwise return a
   // generic TIKTOK_NO_MEDIA — surface it as rate-limit so users know to retry.
-  if (/^\/[a-z]{2}\/about\/?$/i.test(new URL(res.url).pathname)) {
+  if (/^\/[a-z]{2}\/about\/?$/i.test(finalUrlObj.pathname)) {
     throw new ResolveError(
       'TikTok temporarily blocked the request. Wait 30 seconds and try again.',
       'TIKTOK_RATE_LIMITED',

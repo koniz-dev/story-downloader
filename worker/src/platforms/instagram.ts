@@ -190,6 +190,10 @@ export function parseEmbed(html: string): MediaItem[] {
   return items;
 }
 
+export function isInstagramHost(hostname: string): boolean {
+  return /(?:^|\.)instagram\.com$/i.test(hostname);
+}
+
 async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
   let res: Response;
   try {
@@ -203,6 +207,26 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<string> {
       throw new ResolveError('Instagram timed out', 'INSTAGRAM_FETCH_FAILED', 504);
     }
     throw new ResolveError('Could not connect to Instagram', 'INSTAGRAM_FETCH_FAILED', 502);
+  }
+  // Defence-in-depth: if an upstream redirect ever took us off the Instagram
+  // host family, refuse to parse the body. The extracted og:* URLs flow back
+  // to the client (and into /api/proxy) — if we let attacker HTML through
+  // here, the host allowlist in proxy.ts is the last line, not the first.
+  if (res.url) {
+    let finalUrl: URL;
+    try {
+      finalUrl = new URL(res.url);
+    } catch {
+      throw new ResolveError('Instagram returned an unparseable final URL', 'INSTAGRAM_FETCH_FAILED', 502);
+    }
+    if (!isInstagramHost(finalUrl.hostname)) {
+      throw new ResolveError(
+        `Instagram redirect landed off-platform on ${finalUrl.hostname}`,
+        'HOST_NOT_ALLOWED',
+        502,
+        { host: finalUrl.hostname },
+      );
+    }
   }
   if (!res.ok) {
     if (res.status === 429) {

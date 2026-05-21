@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { detectInstagramKind } from '../../src/platforms/instagram';
-import { detectFacebookKind } from '../../src/platforms/facebook';
+import { detectInstagramKind, isInstagramHost } from '../../src/platforms/instagram';
+import { detectFacebookKind, isFacebookHost } from '../../src/platforms/facebook';
 import {
   chooseProxyPageUrl,
   detectTikTokKind,
   extractPhotoItems,
+  isTikTokHost,
   isTikTokPageUrl,
 } from '../../src/platforms/tiktok';
 
@@ -194,6 +195,50 @@ describe('chooseProxyPageUrl', () => {
     const input = 'https://www.tiktok.com/@user/video/1234567890';
     const finalUrl = 'https://www.example.com/blocked';
     expect(chooseProxyPageUrl(input, finalUrl)).toBe(input);
+  });
+});
+
+describe('isTikTokHost / isInstagramHost / isFacebookHost', () => {
+  // These post-redirect host checks gate body parsing in the platform
+  // resolvers. The risk being mitigated is a redirect from a platform URL
+  // landing on an attacker-controlled host whose response we'd otherwise
+  // parse — and whose Set-Cookie we'd harvest in the TikTok case. The
+  // matchers must accept any subdomain of the platform but reject lookalike
+  // suffixes (foo.tiktok.com.attacker.com) and tiktok-substring decoys.
+  it.each([
+    ['www.tiktok.com', true],
+    ['m.tiktok.com', true],
+    ['vm.tiktok.com', true],
+    ['tiktok.com.attacker.com', false],
+    ['notreally-tiktok.com', false],
+    ['evil.com', false],
+    ['', false],
+  ])('isTikTokHost(%s) → %s', (host, expected) => {
+    expect(isTikTokHost(host)).toBe(expected);
+  });
+
+  it.each([
+    ['www.instagram.com', true],
+    ['m.instagram.com', true],
+    ['instagram.com.attacker.com', false],
+    ['notinstagram.com', false],
+    ['scontent.cdninstagram.com', false], // CDN, not the main host
+    ['', false],
+  ])('isInstagramHost(%s) → %s', (host, expected) => {
+    expect(isInstagramHost(host)).toBe(expected);
+  });
+
+  it.each([
+    ['www.facebook.com', true],
+    ['m.facebook.com', true],
+    ['fb.com', true],
+    ['mbasic.fb.com', true],
+    ['fb.watch', true],
+    ['facebook.com.attacker.com', false],
+    ['fakefacebook.com', false],
+    ['', false],
+  ])('isFacebookHost(%s) → %s', (host, expected) => {
+    expect(isFacebookHost(host)).toBe(expected);
   });
 });
 

@@ -116,3 +116,100 @@ describe('proxyMedia range passthrough', () => {
     expect(res.headers.get('Content-Range')).toBeNull();
   });
 });
+
+describe('proxyMedia TikTok playAddr SSRF guard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function tikTokPageHtmlWithPlayAddr(playAddr: string): string {
+    const data = {
+      __DEFAULT_SCOPE__: {
+        'webapp.video-detail': {
+          itemInfo: {
+            itemStruct: { video: { playAddr } },
+          },
+        },
+      },
+    };
+    return `<!DOCTYPE html><html><body><script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">${JSON.stringify(data)}</script></body></html>`;
+  }
+
+  it('refuses to fetch an off-CDN playAddr (would leak TikTok cookies)', async () => {
+    // Simulate a doctored itemStruct that names attacker.com as the playAddr.
+    // Without pre-fetch host validation we would open a TLS connection to
+    // attacker.com with the harvested TikTok Set-Cookie values in the
+    // request headers — by the time the post-fetch host check fires, the
+    // cookies are already on the wire. The pre-fetch gate prevents that.
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo) => {
+        const requestedUrl = typeof input === 'string' ? input : input.url;
+        calls.push(requestedUrl);
+        // First call: the TikTok page fetch. Return HTML with attacker
+        // playAddr. Subsequent calls would only happen if the guard misses.
+        const res = new Response(
+          tikTokPageHtmlWithPlayAddr('https://attacker.example/exfil'),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/html',
+              'Set-Cookie': 'msToken=secret123; Path=/',
+            },
+          },
+        );
+        Object.defineProperty(res, 'url', {
+          value: 'https://www.tiktok.com/@user/video/1234567890',
+          configurable: true,
+        });
+        return res;
+      }),
+    );
+
+    const inbound = new Request(
+      'https://worker.local/api/proxy?url=https://www.tiktok.com/@user/video/1234567890',
+      { headers: { 'cf-connecting-ip': '203.0.113.250' } },
+    );
+    await expect(
+      proxyMedia(
+        'https://www.tiktok.com/@user/video/1234567890',
+        'clip.mp4',
+        inbound,
+      ),
+    ).rejects.toMatchObject({ code: 'HOST_NOT_ALLOWED' });
+
+    // Only the page fetch should have happened. The cookies-bearing CDN
+    // fetch must NEVER have been attempted against attacker.example.
+    expect(calls.every((u) => !u.includes('attacker.example'))).toBe(true);
+  });
+
+  it('refuses a playAddr served over http:// (no protocol downgrade)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        const res = new Response(
+          tikTokPageHtmlWithPlayAddr('http://v16-webapp-prime.tiktokcdn.com/video.mp4'),
+          { status: 200, headers: { 'Content-Type': 'text/html' } },
+        );
+        Object.defineProperty(res, 'url', {
+          value: 'https://www.tiktok.com/@user/video/1234567890',
+          configurable: true,
+        });
+        return res;
+      }),
+    );
+
+    const inbound = new Request(
+      'https://worker.local/api/proxy?url=https://www.tiktok.com/@user/video/1234567890',
+      { headers: { 'cf-connecting-ip': '203.0.113.251' } },
+    );
+    await expect(
+      proxyMedia(
+        'https://www.tiktok.com/@user/video/1234567890',
+        null,
+        inbound,
+      ),
+    ).rejects.toMatchObject({ code: 'HOST_NOT_ALLOWED' });
+  });
+});

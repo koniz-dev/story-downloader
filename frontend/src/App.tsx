@@ -26,6 +26,28 @@ const BULK_DELAY_MS = 500;
 
 type Mode = 'single' | 'bulk';
 
+// Safari private browsing throws `QuotaExceededError` on every
+// localStorage.setItem; Firefox throws SecurityError when "block cookies"
+// is on. Either path would otherwise crash the whole app at mount or on
+// platform change. Treat storage as best-effort.
+function safeStorageGet(key: string): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeStorageSet(key: string, value: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(key, value);
+  } catch {
+    // best-effort: ignore quota / security errors
+  }
+}
+
 export function App() {
   const { t } = useI18n();
   const toast = useToast();
@@ -33,7 +55,7 @@ export function App() {
   // them on tablet+ since horizontal space isn't as scarce there.
   const scrolled = useScrolled(80);
   const [platform, setPlatform] = useState<Platform | null>(() => {
-    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    const saved = safeStorageGet(STORAGE_KEY);
     return saved === 'instagram' || saved === 'facebook' || saved === 'tiktok' ? saved : null;
   });
   const [mode, setMode] = useState<Mode>('single');
@@ -70,7 +92,7 @@ export function App() {
   const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (platform) localStorage.setItem(STORAGE_KEY, platform);
+    if (platform) safeStorageSet(STORAGE_KEY, platform);
   }, [platform]);
 
   // Auto-scroll the URL form into view when the user picks a platform. Skip

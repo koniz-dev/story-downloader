@@ -17,9 +17,15 @@ const LIGHT_BG = '#fafafc';
 const DARK_BG = '#020617';
 
 export function readStored(): Theme {
-  if (typeof localStorage === 'undefined') return 'system';
-  const v = localStorage.getItem(STORAGE_KEY);
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system';
+  // Safari private mode + Firefox "block cookies" throw on Storage access.
+  // Treat any failure as "no preference saved" so the app still boots.
+  try {
+    if (typeof localStorage === 'undefined') return 'system';
+    const v = localStorage.getItem(STORAGE_KEY);
+    return v === 'light' || v === 'dark' || v === 'system' ? v : 'system';
+  } catch {
+    return 'system';
+  }
 }
 
 export function systemPrefersDark(): boolean {
@@ -117,8 +123,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
     if (typeof localStorage === 'undefined') return;
-    if (next === 'system') localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, next);
+    // QuotaExceededError (Safari private) / SecurityError (Firefox block-
+    // cookies) must not bubble out — the in-memory theme switch already
+    // worked; persistence is best-effort.
+    try {
+      if (next === 'system') localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // swallow
+    }
   }, []);
 
   const value = useMemo<ThemeContextValue>(
