@@ -127,6 +127,10 @@ export async function resolveFacebook(rawUrl: string): Promise<ResolveResult> {
   return result;
 }
 
+export function isFacebookHost(hostname: string): boolean {
+  return /(?:^|\.)facebook\.com$|(?:^|\.)fb\.com$|(?:^|\.)fb\.watch$/i.test(hostname);
+}
+
 async function fetchHtml(url: string, kind: ContentKind): Promise<{ html: string; finalUrl: string }> {
   let res: Response;
   try {
@@ -140,6 +144,27 @@ async function fetchHtml(url: string, kind: ContentKind): Promise<{ html: string
       throw new ResolveError('Facebook timed out', 'FACEBOOK_FETCH_FAILED', 504);
     }
     throw new ResolveError('Could not connect to Facebook', 'FACEBOOK_FETCH_FAILED', 502);
+  }
+  // Defence-in-depth: refuse to parse body if a redirect landed off the
+  // Facebook host family. Extracted og:* / playable_url values are echoed
+  // back to the caller and the host allowlist in proxy.ts only fires when
+  // the user clicks Download — we don't want to leak attacker URLs to the
+  // resolve response in the meantime.
+  if (res.url) {
+    let finalUrl: URL;
+    try {
+      finalUrl = new URL(res.url);
+    } catch {
+      throw new ResolveError('Facebook returned an unparseable final URL', 'FACEBOOK_FETCH_FAILED', 502);
+    }
+    if (!isFacebookHost(finalUrl.hostname)) {
+      throw new ResolveError(
+        `Facebook redirect landed off-platform on ${finalUrl.hostname}`,
+        'HOST_NOT_ALLOWED',
+        502,
+        { host: finalUrl.hostname },
+      );
+    }
   }
   if (!res.ok) {
     if (res.status === 429) {

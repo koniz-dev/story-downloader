@@ -234,6 +234,29 @@ describe('POST /api/resolve — input validation', () => {
     expect(res.status).toBe(400);
     expect(((await res.json()) as { code: string }).code).toBe('MISSING_URL');
   });
+
+  it('rejects http:// URLs (INVALID_PROTOCOL)', async () => {
+    // The downloader operates exclusively over https. Accepting http would
+    // emit plaintext fetches to the upstream and is also a tell for crafted
+    // schemes that pass a hostname regex without inheriting URL semantics.
+    const res = await SELF.fetch(
+      jsonRequest(
+        '/api/resolve',
+        { url: 'http://www.instagram.com/p/abc/' },
+        '203.0.113.104',
+      ),
+    );
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_PROTOCOL');
+  });
+
+  it('rejects unparseable URL strings (INVALID_URL)', async () => {
+    const res = await SELF.fetch(
+      jsonRequest('/api/resolve', { url: 'not a url at all' }, '203.0.113.105'),
+    );
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_URL');
+  });
 });
 
 describe('GET /api/proxy — input validation + whitelist', () => {

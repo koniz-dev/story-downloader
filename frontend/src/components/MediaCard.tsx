@@ -78,7 +78,7 @@ export function MediaCard({ item, platform, kind, index = 0 }: Props) {
         ) : (
           <img
             src={previewSrc}
-            alt="media preview"
+            alt={t.media.image}
             loading="lazy"
             decoding="async"
             className="w-full h-full object-contain"

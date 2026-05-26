@@ -71,6 +71,22 @@ router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestCont
     throw new ResolveError('Body must include "url" string field', 'MISSING_URL');
   }
 
+  // Enforce https:// upfront. URLs reach this endpoint from public origins via
+  // CORS; an http:// URL would force an opportunistic-downgrade fetch to the
+  // upstream (Workers' fetch doesn't auto-upgrade http→https). Reject before
+  // platform routing so we never spend egress on plaintext requests, and so
+  // schemes like ftp://, ws://, javascript: can't slip through a hostname
+  // regex that doesn't inspect the protocol.
+  let parsed: URL;
+  try {
+    parsed = new URL(body.url);
+  } catch {
+    throw new ResolveError('URL is not parseable', 'INVALID_URL');
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new ResolveError('Only https:// URLs are accepted', 'INVALID_PROTOCOL');
+  }
+
   const platform = detectPlatform(body.url);
   if (!platform) {
     throw new ResolveError('URL is not Instagram, Facebook, or TikTok', 'UNSUPPORTED_PLATFORM');

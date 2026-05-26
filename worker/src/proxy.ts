@@ -120,6 +120,28 @@ async function proxyTikTokVideo(
     );
   }
 
+  // Validate the extracted playAddr BEFORE fetching it. The post-fetch
+  // `assertFinalHostAllowed` check below only stops us serving attacker
+  // content back to the client — by the time it fires we've already opened a
+  // TLS connection to the attacker and shipped the TikTok session cookies
+  // (msToken / tt_chain_token) in the request headers. Pre-fetch validation
+  // is the only place we can prevent cookie exfiltration if a doctored
+  // itemStruct ever names an off-CDN URL.
+  let playAddrUrl: URL;
+  try {
+    playAddrUrl = new URL(playAddr);
+  } catch {
+    throw new ResolveError('TikTok returned an unparseable playAddr', 'TIKTOK_NO_MEDIA', 502);
+  }
+  if (playAddrUrl.protocol !== 'https:' || !isHostAllowed(playAddrUrl.hostname, ALLOWED_HOSTS)) {
+    throw new ResolveError(
+      `TikTok playAddr host ${playAddrUrl.hostname} is not in the whitelist`,
+      'HOST_NOT_ALLOWED',
+      403,
+      { host: playAddrUrl.hostname },
+    );
+  }
+
   const upstreamHeaders: Record<string, string> = {
     'User-Agent': TIKTOK_BROWSER_UA,
     Referer: 'https://www.tiktok.com/',
