@@ -40,6 +40,11 @@ describe('corsHeaders', () => {
     expect(h['Access-Control-Allow-Origin']).toBeUndefined();
   });
 
+  it('does not fall back to a wildcard github.io allowlist when env is unset', () => {
+    const h = corsHeaders(req('https://attacker.github.io'), {}) as Record<string, string>;
+    expect(h['Access-Control-Allow-Origin']).toBeUndefined();
+  });
+
   it('always sets Vary: Origin and method/header allowlists', () => {
     const h = corsHeaders(req('https://anything.com'), ENV) as Record<string, string>;
     expect(h['Vary']).toBe('Origin');

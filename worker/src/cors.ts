@@ -1,6 +1,8 @@
 import type { Env } from './types';
 
-const DEFAULT_ALLOWED = ['http://localhost:5173', 'https://*.github.io'];
+// Safe fallback for local dev only. Production must set ALLOWED_ORIGINS
+// explicitly; never broaden the default to a shared hosting wildcard.
+const DEFAULT_ALLOWED = ['http://localhost:5173'];
 
 function originAllowed(origin: string | null, env: Env): string | null {
   if (!origin) return null;

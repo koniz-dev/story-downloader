@@ -65,6 +65,8 @@ export function App() {
   // toggle, not on hydration from localStorage. Avoids jumping the page on
   // initial paint and on switch-back-and-forth tinkering.
   const isInitialMount = useRef(true);
+  const activeRunId = useRef(0);
+  const singleRequestAbort = useRef<AbortController | null>(null);
   const urlFormRef = useRef<HTMLElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -114,8 +116,29 @@ export function App() {
     return () => window.cancelAnimationFrame(handle);
   }, [error]);
 
+  useEffect(
+    () => () => {
+      activeRunId.current++;
+      singleRequestAbort.current?.abort();
+    },
+    [],
+  );
+
+  function cancelActiveWork(): void {
+    activeRunId.current++;
+    singleRequestAbort.current?.abort();
+    singleRequestAbort.current = null;
+  }
+
+  function isRunActive(runId: number): boolean {
+    return activeRunId.current === runId;
+  }
+
   function handlePlatformChange(p: Platform) {
+    if (loading) return;
+    cancelActiveWork();
     setPlatform(p);
+    setLoading(false);
     setResult(null);
     setError(null);
     setRows([]);
@@ -125,6 +148,7 @@ export function App() {
 
   function handleModeChange(next: Mode) {
     if (loading || next === mode) return;
+    cancelActiveWork();
     setMode(next);
     setResult(null);
     setError(null);
@@ -179,24 +203,34 @@ export function App() {
       await handleBulkSubmit(input);
       return;
     }
+    cancelActiveWork();
+    const runId = ++activeRunId.current;
+    const controller = new AbortController();
+    singleRequestAbort.current = controller;
     setLoading(true);
     setError(null);
     setResult(null);
     const started = Date.now();
     track({ event: 'resolve.start', platform });
     try {
-      const res = await resolveMedia(input);
+      const res = await resolveMedia(input, controller.signal);
+      if (!isRunActive(runId)) return;
       setResult(res);
       track({ event: 'resolve.ok', platform, kind: res.kind, items: res.mediaItems.length, ms: Date.now() - started });
       if (res.mediaItems.length === 0) {
         setError({ message: t.result.noMedia, code: 'NO_MEDIA' });
       }
     } catch (e) {
+      if (!isRunActive(runId)) return;
+      if (controller.signal.aborted) return;
       const { message, code, requestId } = resolveErrorMessage(e);
       setError({ message, code, requestId });
       track({ event: 'resolve.fail', platform, code, ms: Date.now() - started, requestId });
     } finally {
-      setLoading(false);
+      if (isRunActive(runId)) {
+        singleRequestAbort.current = null;
+        setLoading(false);
+      }
     }
   }
 
@@ -208,6 +242,8 @@ export function App() {
       return;
     }
 
+    cancelActiveWork();
+    const runId = ++activeRunId.current;
     setLoading(true);
     setError(null);
     setResult(null);
@@ -220,6 +256,7 @@ export function App() {
     let failed = 0;
 
     for (let i = 0; i < valid.length; i++) {
+      if (!isRunActive(runId)) return;
       const url = valid[i];
       const rowPlatform = detectPlatform(url) ?? platform ?? 'instagram';
       setRows((prev) => prev.map((r, idx) => (idx === i ? { url, status: 'loading' } : r)));
@@ -227,6 +264,7 @@ export function App() {
       track({ event: 'resolve.start', platform: rowPlatform });
       try {
         const res = await resolveMedia(url);
+        if (!isRunActive(runId)) return;
         track({ event: 'resolve.ok', platform: rowPlatform, kind: res.kind, items: res.mediaItems.length, ms: Date.now() - started });
         if (res.mediaItems.length === 0) {
           failed++;
@@ -240,6 +278,7 @@ export function App() {
           setRows((prev) => prev.map((r, idx) => (idx === i ? { url, status: 'ok', response: res } : r)));
         }
       } catch (e) {
+        if (!isRunActive(runId)) return;
         failed++;
         const { message, code, requestId } = resolveErrorMessage(e);
         track({ event: 'resolve.fail', platform: rowPlatform, code, ms: Date.now() - started, requestId });
@@ -255,6 +294,7 @@ export function App() {
       }
     }
 
+    if (!isRunActive(runId)) return;
     setLoading(false);
     setBulkProgress(null);
     track({ event: 'bulk.complete', ok, failed, total: valid.length });
@@ -331,7 +371,7 @@ export function App() {
             label={t.steps.selectPlatform}
             state={platform ? 'completed' : 'active'}
           />
-          <PlatformSelector value={platform} onChange={handlePlatformChange} />
+          <PlatformSelector value={platform} disabled={loading} onChange={handlePlatformChange} />
         </section>
 
         {platform && (

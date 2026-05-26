@@ -20,6 +20,7 @@ export interface ResolveResult {
 
 export interface Env {
   ALLOWED_ORIGINS?: string;
+  RATE_LIMITER?: DurableObjectNamespace;
   // Optional metadata injected at deploy time (see deploy-worker.yml).
   BUILD_COMMIT?: string;
   BUILD_AT?: string;

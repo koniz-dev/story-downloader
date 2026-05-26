@@ -62,7 +62,7 @@ function cachedJson(body: unknown, cacheControl: string): Response {
 }
 
 router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestContext) => {
-  await checkRateLimit(request, '/api/resolve');
+  await checkRateLimit(request, _env, '/api/resolve');
 
   const started = Date.now();
   const raw = await readBoundedRequestBody(request, MAX_RESOLVE_BODY_BYTES);
@@ -107,7 +107,7 @@ router.post('/api/resolve', async (request: Request, _env: Env, ctx: RequestCont
 });
 
 router.get('/api/proxy', async (request: Request, _env: Env, ctx: RequestContext) => {
-  await checkRateLimit(request, '/api/proxy');
+  await checkRateLimit(request, _env, '/api/proxy');
   const url = new URL(request.url);
   const target = url.searchParams.get('url');
   const filename = url.searchParams.get('filename');
@@ -123,7 +123,7 @@ router.get('/api/proxy', async (request: Request, _env: Env, ctx: RequestContext
 });
 
 router.post('/api/track', async (request: Request, env: Env) => {
-  await checkRateLimit(request, '/api/track');
+  await checkRateLimit(request, env, '/api/track');
   const raw = await readBoundedRequestBody(request, MAX_TRACK_BODY_BYTES);
   const payload = validateTrackPayload(parseJson<unknown>(raw));
   writeTrack(env, payload);
@@ -253,3 +253,5 @@ export default {
     }
   },
 };
+
+export { RateLimiter } from './rate-limit';

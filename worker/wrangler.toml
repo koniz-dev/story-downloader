@@ -13,6 +13,11 @@ compatibility_date = "2026-01-15"
 [vars]
 ALLOWED_ORIGINS = "http://localhost:5173,https://koniz-dev.github.io"
 
+[durable_objects]
+bindings = [
+  { name = "RATE_LIMITER", class_name = "RateLimiter" }
+]
+
 # Analytics Engine sink. The binding name (AE) must match `env.AE` in the
 # Worker code and the schema documented at the top of src/analytics.ts.
 # Schema is positional — append new blob/double fields at the end, never
@@ -20,3 +25,7 @@ ALLOWED_ORIGINS = "http://localhost:5173,https://koniz-dev.github.io"
 [[analytics_engine_datasets]]
 binding = "AE"
 dataset = "story_dl_track"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]

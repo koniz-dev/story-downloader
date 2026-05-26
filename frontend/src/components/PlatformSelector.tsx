@@ -4,6 +4,7 @@ import { PlatformIcon } from './PlatformIcon';
 
 interface Props {
   value: Platform | null;
+  disabled?: boolean;
   onChange: (platform: Platform) => void;
 }
 
@@ -13,7 +14,7 @@ const PLATFORMS: Platform[] = ['instagram', 'facebook', 'tiktok'];
 // touch target (~76px min-height) and the 3 platforms align symmetrically.
 // On sm+ collapse to a 3-up grid where tiles use a vertical "card" arrangement
 // for desktop visual balance.
-export function PlatformSelector({ value, onChange }: Props) {
+export function PlatformSelector({ value, disabled = false, onChange }: Props) {
   const { t } = useI18n();
   return (
     <div
@@ -28,8 +29,9 @@ export function PlatformSelector({ value, onChange }: Props) {
             key={p}
             type="button"
             aria-pressed={selected}
+            disabled={disabled}
             onClick={() => onChange(p)}
-            className={`glass group relative overflow-hidden rounded-2xl text-left transition-all duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring active:scale-[0.99] motion-reduce:active:scale-100 sm:hover:-translate-y-0.5 motion-reduce:sm:hover:translate-y-0 ${
+            className={`glass group relative overflow-hidden rounded-2xl text-left transition-all duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring active:scale-[0.99] motion-reduce:active:scale-100 sm:hover:-translate-y-0.5 motion-reduce:sm:hover:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none disabled:sm:hover:translate-y-0 ${
               selected
                 ? 'glow-accent ring-2 ring-accent-ring/50'
                 : 'hover:shadow-card'
