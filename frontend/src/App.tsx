@@ -88,7 +88,7 @@ export function App() {
   // initial paint and on switch-back-and-forth tinkering.
   const isInitialMount = useRef(true);
   const activeRunId = useRef(0);
-  const singleRequestAbort = useRef<AbortController | null>(null);
+  const activeRequestAbort = useRef<AbortController | null>(null);
   const urlFormRef = useRef<HTMLElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -141,15 +141,15 @@ export function App() {
   useEffect(
     () => () => {
       activeRunId.current++;
-      singleRequestAbort.current?.abort();
+      activeRequestAbort.current?.abort();
     },
     [],
   );
 
   function cancelActiveWork(): void {
     activeRunId.current++;
-    singleRequestAbort.current?.abort();
-    singleRequestAbort.current = null;
+    activeRequestAbort.current?.abort();
+    activeRequestAbort.current = null;
   }
 
   function isRunActive(runId: number): boolean {
@@ -228,7 +228,7 @@ export function App() {
     cancelActiveWork();
     const runId = ++activeRunId.current;
     const controller = new AbortController();
-    singleRequestAbort.current = controller;
+    activeRequestAbort.current = controller;
     setLoading(true);
     setError(null);
     setResult(null);
@@ -250,7 +250,7 @@ export function App() {
       track({ event: 'resolve.fail', platform, code, ms: Date.now() - started, requestId });
     } finally {
       if (isRunActive(runId)) {
-        singleRequestAbort.current = null;
+        activeRequestAbort.current = null;
         setLoading(false);
       }
     }
@@ -279,13 +279,15 @@ export function App() {
 
     for (let i = 0; i < valid.length; i++) {
       if (!isRunActive(runId)) return;
+      const controller = new AbortController();
+      activeRequestAbort.current = controller;
       const url = valid[i];
       const rowPlatform = detectPlatform(url) ?? platform ?? 'instagram';
       setRows((prev) => prev.map((r, idx) => (idx === i ? { url, status: 'loading' } : r)));
       const started = Date.now();
       track({ event: 'resolve.start', platform: rowPlatform });
       try {
-        const res = await resolveMedia(url);
+        const res = await resolveMedia(url, controller.signal);
         if (!isRunActive(runId)) return;
         track({ event: 'resolve.ok', platform: rowPlatform, kind: res.kind, items: res.mediaItems.length, ms: Date.now() - started });
         if (res.mediaItems.length === 0) {
@@ -301,6 +303,7 @@ export function App() {
         }
       } catch (e) {
         if (!isRunActive(runId)) return;
+        if (controller.signal.aborted) return;
         failed++;
         const { message, code, requestId } = resolveErrorMessage(e);
         track({ event: 'resolve.fail', platform: rowPlatform, code, ms: Date.now() - started, requestId });
@@ -309,6 +312,10 @@ export function App() {
             idx === i ? { url, status: 'error', message, code, requestId } : r,
           ),
         );
+      } finally {
+        if (activeRequestAbort.current === controller) {
+          activeRequestAbort.current = null;
+        }
       }
       setBulkProgress({ done: i + 1, total: valid.length });
       if (i < valid.length - 1) {

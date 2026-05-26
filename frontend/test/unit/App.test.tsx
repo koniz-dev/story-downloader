@@ -81,4 +81,28 @@ describe('App', () => {
 
     pending.resolve({ platform: 'instagram', kind: 'reel', mediaItems: [] });
   });
+
+  it('passes an AbortSignal to bulk resolves', async () => {
+    resolveMediaMock.mockResolvedValue({
+      platform: 'instagram',
+      kind: 'reel',
+      mediaItems: [{ type: 'video', url: 'https://cdn.example/video.mp4' }],
+    });
+
+    render(wrap(<App />));
+
+    fireEvent.click(screen.getByRole('button', { name: /Instagram/ }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Multiple URLs' }));
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: {
+        value: 'https://www.instagram.com/reel/abc123/\nhttps://www.instagram.com/reel/def456/',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+
+    expect(resolveMediaMock).toHaveBeenCalled();
+    for (const call of resolveMediaMock.mock.calls) {
+      expect(call[1]).toBeInstanceOf(AbortSignal);
+    }
+  });
 });
