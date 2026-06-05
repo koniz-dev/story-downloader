@@ -4,11 +4,28 @@
 // can't test here (resolve-success path, proxy-stream path) are exercised by
 // the production stress tests against the deployed worker.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { SELF } from 'cloudflare:test';
 
 const BASE = 'http://example.com';
 const ALLOWED_ORIGIN = 'https://koniz-dev.github.io';
+
+// The rate limiter buckets requests by floor(Date.now() / windowMs). A burst
+// that straddles a minute boundary lands in two buckets, so the count resets
+// mid-test and the (max+1)th request sails through instead of returning 429.
+// Tests and the worker share one isolate under vitest-pool-workers, so pinning
+// Date.now just inside the current window keeps every burst in one bucket.
+// Pin to the *current* window (not an arbitrary constant) so the limiter's
+// cleanup alarm (now + 2 windows) stays in the real future.
+function pinClockInsideRateLimitWindow() {
+  beforeAll(() => {
+    const pinned = Math.floor(Date.now() / 60_000) * 60_000 + 1_000;
+    vi.spyOn(Date, 'now').mockReturnValue(pinned);
+  });
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+}
 
 function jsonRequest(path: string, body: unknown, ipOverride?: string): Request {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -290,6 +307,8 @@ describe('GET /api/proxy — input validation + whitelist', () => {
 });
 
 describe('Rate limiter', () => {
+  pinClockInsideRateLimitWindow();
+
   // Each test uses a unique IP so windows don't overlap with sibling tests.
   function reqFromIP(ip: string, path: string, body: unknown): Request {
     return new Request(`${BASE}${path}`, {
@@ -397,20 +416,24 @@ describe('POST /api/track', () => {
     expect(((await res.json()) as { code: string }).code).toBe('INVALID_TRACK_EVENT');
   });
 
-  it('rate-limits the 121st request from one IP', async () => {
-    const ip = '203.0.113.44';
-    function req(): Request {
-      return jsonRequest('/api/track', { event: 'platform.select', platform: 'tiktok' }, ip);
-    }
-    for (let i = 0; i < 120; i++) {
-      const res = await SELF.fetch(req());
-      expect(res.status).toBe(204);
-    }
-    const blocked = await SELF.fetch(req());
-    expect(blocked.status).toBe(429);
-    const body = (await blocked.json()) as { code: string; params?: { route?: string } };
-    expect(body.code).toBe('RATE_LIMITED');
-    expect(body.params?.route).toBe('/api/track');
+  describe('burst limit', () => {
+    pinClockInsideRateLimitWindow();
+
+    it('rate-limits the 121st request from one IP', async () => {
+      const ip = '203.0.113.44';
+      function req(): Request {
+        return jsonRequest('/api/track', { event: 'platform.select', platform: 'tiktok' }, ip);
+      }
+      for (let i = 0; i < 120; i++) {
+        const res = await SELF.fetch(req());
+        expect(res.status).toBe(204);
+      }
+      const blocked = await SELF.fetch(req());
+      expect(blocked.status).toBe(429);
+      const body = (await blocked.json()) as { code: string; params?: { route?: string } };
+      expect(body.code).toBe('RATE_LIMITED');
+      expect(body.params?.route).toBe('/api/track');
+    });
   });
 
   it('OPTIONS preflight from allowed origin returns 204 + ACAO', async () => {
