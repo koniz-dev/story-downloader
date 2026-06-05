@@ -15,7 +15,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       # NOTE: tag-pinned for initial commit. Dependabot will SHA-pin on its
       # next github-actions run to match the existing pin style.
