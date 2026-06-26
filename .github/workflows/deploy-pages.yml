@@ -43,7 +43,7 @@ jobs:
         id: playwright-cache
         # NOTE: tag-pinned for initial commit. Dependabot will SHA-pin on its
         # next github-actions run to match the existing pin style.
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
