@@ -114,13 +114,17 @@ function buildHead(locale, viteAssets) {
     }
     return 'https://story-dl-worker.koniz-dev.workers.dev';
   })();
+  // Cloudflare Web Analytics: the beacon script is served from
+  // static.cloudflareinsights.com and reports back to cloudflareinsights.com
+  // (POST /cdn-cgi/rum), so both hosts must be whitelisted or the strict CSP
+  // blocks the script load and the reporting call respectively.
   const csp = [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' https: data:",
     `media-src 'self' ${workerOrigin}`,
-    `connect-src 'self' ${workerOrigin}`,
+    `connect-src 'self' ${workerOrigin} https://cloudflareinsights.com`,
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; ');
@@ -168,6 +172,9 @@ ${viteAssets.map((t) => `    ${t}`).join('\n')}
     <script type="application/ld+json">
 ${buildJsonLd(locale, copy)}
     </script>
+
+    <!-- Cloudflare Web Analytics (privacy-first, cookieless) -->
+    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a449a69ca58741399e03b35a936526fa"}'></script>
   </head>`;
 }
 
